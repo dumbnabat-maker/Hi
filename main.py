@@ -219,7 +219,7 @@ async def setfav(update: Update, context: CallbackContext):
 # --- Main Function ---
 def main():
     # Get token from environment variable
-    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    token = os.environ.get("7814983224:AAE3J1yPGVHS6n49Cz_RiZ5_6bAMHAhKPDc")
     
     if not token:
         print("Error: TELEGRAM_BOT_TOKEN environment variable not set!")
