@@ -49,15 +49,15 @@ async def upload(update: Update, context: CallbackContext) -> None:
             return
 
         rarity_map = {
-            1: "⚪️ Common", 
-            2: "🟢 Uncommon", 
-            3: "🔵 Rare", 
-            4: "🟣 Epic", 
-            5: "🟡 Legendary", 
-            6: "🟥 Mythic", 
-            7: "🌌 Celestial", 
-            8: "🔥 Arcane", 
-            9: "💎 Limited Edition"
+            1: "Common", 
+            2: "Uncommon", 
+            3: "Rare", 
+            4: "Epic", 
+            5: "Legendary", 
+            6: "Mythic", 
+            7: "Celestial", 
+            8: "Arcane", 
+            9: "Limited Edition"
         }
         try:
             rarity = rarity_map[int(args[3])]
@@ -143,15 +143,15 @@ async def update(update: Update, context: CallbackContext) -> None:
             new_value = args[2].replace('-', ' ').title()
         elif args[1] == 'rarity':
             rarity_map = {
-                1: "⚪️ Common", 
-                2: "🟢 Uncommon", 
-                3: "🔵 Rare", 
-                4: "🟣 Epic", 
-                5: "🟡 Legendary", 
-                6: "🟥 Mythic", 
-                7: "🌌 Celestial", 
-                8: "🔥 Arcane", 
-                9: "💎 Limited Edition"
+                1: "Common", 
+                2: "Uncommon", 
+                3: "Rare", 
+                4: "Epic", 
+                5: "Legendary", 
+                6: "Mythic", 
+                7: "Celestial", 
+                8: "Arcane", 
+                9: "Limited Edition"
             }
             try:
                 new_value = rarity_map[int(args[2])]
