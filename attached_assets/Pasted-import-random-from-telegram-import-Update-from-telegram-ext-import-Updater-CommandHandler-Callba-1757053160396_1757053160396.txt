@@ -1,0 +1,78 @@
+import random
+from telegram import Update
+from telegram.ext import Updater, CommandHandler, CallbackContext
+
+# --- Global Variables ---
+
+rarities = {
+    "Common": 20,
+    "Uncommon": 20,
+    "Rare": 20,
+    "Epic": 20,
+    "Legendary": 10,
+    "Mythic": 5,
+    "Celestial": 2,
+    "Arcane": 1,
+    "Limited Edition": 0
+}
+
+rarity_styles = {
+    "Common": "⚪️",
+    "Uncommon": "🟢",
+    "Rare": "🔵",
+    "Epic": "🟣",
+    "Legendary": "🟡",
+    "Mythic": "🟥",
+    "Celestial": "🌌",
+    "Arcane": "🔥",
+    "Limited Edition": "💎"
+}
+
+# Example characters (you can replace with your real image URLs later)
+characters = {
+    "Common": [{"name": "Test Character 1", "url": "https://placekitten.com/300/300"}],
+    "Rare": [{"name": "Test Character 2", "url": "https://placekitten.com/400/400"}],
+    "Legendary": [{"name": "Test Character 3", "url": "https://placekitten.com/500/500"}]
+}
+
+
+# --- Bot Functions ---
+
+def start(update: Update, context: CallbackContext):
+    update.message.reply_text("✨ Welcome to the Summon Bot! Use /summon to summon a character.")
+
+
+def summon(update: Update, context: CallbackContext):
+    rarity = random.choices(
+        population=list(rarities.keys()),
+        weights=list(rarities.values()),
+        k=1
+    )[0]
+
+    if rarity in characters and characters[rarity]:
+        character = random.choice(characters[rarity])
+        style = rarity_styles.get(rarity, "")
+        caption = f"{style} [{rarity}] {character['name']} appeared!"
+
+        update.message.reply_photo(
+            character["url"],
+            caption=caption
+        )
+    else:
+        update.message.reply_text("⚠️ No characters found for this rarity yet.")
+
+
+# --- Main Function ---
+def main():
+    updater = Updater("YOUR_TELEGRAM_BOT_TOKEN", use_context=True)
+    dispatcher = updater.dispatcher
+
+    dispatcher.add_handler(CommandHandler("start", start))
+    dispatcher.add_handler(CommandHandler("summon", summon))
+
+    updater.start_polling()
+    updater.idle()
+
+
+if name == "main":
+    main()
