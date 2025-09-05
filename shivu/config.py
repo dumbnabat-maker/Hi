@@ -9,7 +9,7 @@ class Config(object):
     GROUP_ID = int(os.environ.get("GROUP_ID", "-1002133191051"))
     TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
     mongo_url = os.environ.get("MONGODB_URL")
-    PHOTO_URL = ["https://telegra.ph/file/b925c3985f0f325e62e17.jpg"]
+    PHOTO_URL = ["https://i.imgur.com/pbKByWW.jpg"]
     SUPPORT_CHAT = os.environ.get("SUPPORT_CHAT", "Collect_em_support")
     UPDATE_CHAT = os.environ.get("UPDATE_CHAT", "Collect_em_support")
     BOT_USERNAME = os.environ.get("BOT_USERNAME", "Collect_Em_AllBot")
