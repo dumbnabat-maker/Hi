@@ -14,7 +14,7 @@ class Config(object):
     UPDATE_CHAT = os.environ.get("UPDATE_CHAT", "Collect_em_support")
     BOT_USERNAME = os.environ.get("BOT_USERNAME", "Collect_Em_AllBot")
     CHARA_CHANNEL_ID = os.environ.get("CHARA_CHANNEL_ID", "-1002133191051")
-    api_id = int(os.environ.get("TELEGRAM_API_ID"))
+    api_id = int(os.environ.get("TELEGRAM_API_ID", "0"))
     api_hash = os.environ.get("TELEGRAM_API_HASH")
 
     
