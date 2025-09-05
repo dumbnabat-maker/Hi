@@ -19,13 +19,21 @@ rarity_styles = {
     "Limited Edition": "💎"
 }
 
-WRONG_FORMAT_TEXT = """Wrong ❌️ format...  eg. /upload Img_url muzan-kibutsuji Demon-slayer 3
+WRONG_FORMAT_TEXT = """Wrong ❌️ format...  eg. /upload Img_url muzan-kibutsuji Demon-slayer 5
 
 img_url character-name anime-name rarity-number
 
-use rarity number accordingly rarity Map
+Use rarity number accordingly:
 
-rarity_map = 1 (⚪️ Common), 2 (🟣 Rare) , 3 (🟡 Legendary), 4 (🟢 Medium)"""
+1 = ⚪️ Common
+2 = 🟢 Uncommon  
+3 = 🔵 Rare
+4 = 🟣 Epic
+5 = 🟡 Legendary
+6 = 🟥 Mythic
+7 = 🌌 Celestial
+8 = 🔥 Arcane
+9 = 💎 Limited Edition"""
 
 
 
