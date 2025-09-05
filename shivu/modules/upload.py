@@ -48,11 +48,21 @@ async def upload(update: Update, context: CallbackContext) -> None:
             await update.message.reply_text('Invalid URL.')
             return
 
-        rarity_map = {1: "⚪ Common", 2: "🟣 Rare", 3: "🟡 Legendary", 4: "🟢 Medium"}
+        rarity_map = {
+            1: "⚪️ Common", 
+            2: "🟢 Uncommon", 
+            3: "🔵 Rare", 
+            4: "🟣 Epic", 
+            5: "🟡 Legendary", 
+            6: "🟥 Mythic", 
+            7: "🌌 Celestial", 
+            8: "🔥 Arcane", 
+            9: "💎 Limited Edition"
+        }
         try:
             rarity = rarity_map[int(args[3])]
         except KeyError:
-            await update.message.reply_text('Invalid rarity. Please use 1, 2, 3, 4, or 5.')
+            await update.message.reply_text('Invalid rarity. Please use 1-9:\n1=Common, 2=Uncommon, 3=Rare, 4=Epic, 5=Legendary, 6=Mythic, 7=Celestial, 8=Arcane, 9=Limited Edition')
             return
 
         id = str(await get_next_sequence_number('character_id')).zfill(2)
@@ -132,11 +142,21 @@ async def update(update: Update, context: CallbackContext) -> None:
         if args[1] in ['name', 'anime']:
             new_value = args[2].replace('-', ' ').title()
         elif args[1] == 'rarity':
-            rarity_map = {1: "⚪ Common", 2: "🟣 Rare", 3: "🟡 Legendary", 4: "🟢 Medium", 5: "💮 Special edition"}
+            rarity_map = {
+                1: "⚪️ Common", 
+                2: "🟢 Uncommon", 
+                3: "🔵 Rare", 
+                4: "🟣 Epic", 
+                5: "🟡 Legendary", 
+                6: "🟥 Mythic", 
+                7: "🌌 Celestial", 
+                8: "🔥 Arcane", 
+                9: "💎 Limited Edition"
+            }
             try:
                 new_value = rarity_map[int(args[2])]
             except KeyError:
-                await update.message.reply_text('Invalid rarity. Please use 1, 2, 3, 4, or 5.')
+                await update.message.reply_text('Invalid rarity. Please use 1-9:\n1=Common, 2=Uncommon, 3=Rare, 4=Epic, 5=Legendary, 6=Mythic, 7=Celestial, 8=Arcane, 9=Limited Edition')
                 return
         else:
             new_value = args[2]
