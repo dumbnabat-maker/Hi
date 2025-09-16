@@ -217,6 +217,61 @@ async def delete(update: Update, context: CallbackContext) -> None:
     except Exception as e:
         await update.message.reply_text(f'{str(e)}')
 
+async def summon(update: Update, context: CallbackContext) -> None:
+    """Summon a random character for testing (sudo users only)"""
+    if str(update.effective_user.id) not in sudo_users:
+        await update.message.reply_text('Ask My Owner...')
+        return
+        
+    try:
+        # Get total character count
+        total_characters = await collection.count_documents({})
+        
+        if total_characters == 0:
+            await update.message.reply_text('📭 No characters in database to summon!\n\nUpload some characters first using /upload')
+            return
+        
+        # Get a random character from the database
+        random_character = await collection.aggregate([
+            {'$sample': {'size': 1}}
+        ]).to_list(length=1)
+        
+        if not random_character:
+            await update.message.reply_text('❌ Failed to summon a character')
+            return
+            
+        character = random_character[0]
+        
+        # Get rarity emoji
+        rarity_emoji = rarity_styles.get(character.get('rarity', ''), "")
+        
+        # Create beautiful summon display
+        caption = (
+            f"🌟 <b>A wild character appears!</b> 🌟\n\n"
+            f"✨ <b>{character['name']}</b> ✨\n"
+            f"🎌 <i>{character['anime']}</i>\n"
+            f"━━━━━━━━━━━━━━━━\n"
+            f"{rarity_emoji} <b>{character['rarity']}</b>\n"
+            f"🆔 <b>ID:</b> #{character['id']}\n"
+            f"━━━━━━━━━━━━━━━━\n"
+            f"🎮 <i>Test Summon</i>"
+        )
+        
+        # Process the image URL for compatibility
+        from shivu import process_image_url
+        processed_url = await process_image_url(character['img_url'])
+        
+        await context.bot.send_photo(
+            chat_id=update.effective_chat.id,
+            photo=processed_url,
+            caption=caption,
+            parse_mode='HTML'
+        )
+        
+    except Exception as e:
+        await update.message.reply_text(f'❌ Error summoning character: {str(e)}')
+
+
 async def find(update: Update, context: CallbackContext) -> None:
     """Find a character by ID number"""
     try:
@@ -360,6 +415,8 @@ UPLOAD_HANDLER = CommandHandler('upload', upload, block=False)
 application.add_handler(UPLOAD_HANDLER)
 DELETE_HANDLER = CommandHandler('delete', delete, block=False)
 application.add_handler(DELETE_HANDLER)
+SUMMON_HANDLER = CommandHandler('summon', summon, block=False)
+application.add_handler(SUMMON_HANDLER)
 FIND_HANDLER = CommandHandler('find', find, block=False)
 application.add_handler(FIND_HANDLER)
 UPDATE_HANDLER = CommandHandler('update', update, block=False)
