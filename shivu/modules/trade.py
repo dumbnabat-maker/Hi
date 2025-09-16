@@ -2,7 +2,7 @@ from pyrogram import filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from shivu import user_collection, shivuu, collection
-from shivu.config import sudo_users
+from shivu.config import Config
 
 pending_trades = {}
 
@@ -218,7 +218,7 @@ async def give(client, message):
     sender_id = message.from_user.id
     
     # Check if user is admin
-    if str(sender_id) not in sudo_users:
+    if str(sender_id) not in Config.sudo_users:
         await message.reply_text("🚫 This command is only available to administrators.")
         return
     
