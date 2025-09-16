@@ -73,7 +73,9 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
 
         if fav_character and 'img_url' in fav_character:
             if update.message:
-                await update.message.reply_photo(photo=fav_character['img_url'], parse_mode='HTML', caption=harem_message, reply_markup=reply_markup)
+                from shivu import process_image_url
+                processed_url = await process_image_url(fav_character['img_url'])
+                await update.message.reply_photo(photo=processed_url, parse_mode='HTML', caption=harem_message, reply_markup=reply_markup)
             else:
                 
                 if update.callback_query.message.caption != harem_message:

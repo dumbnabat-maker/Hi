@@ -53,12 +53,14 @@ async def start(update: Update, context: CallbackContext) -> None:
             [InlineKeyboardButton("HELP", callback_data='help')]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        photo_url = random.choice(PHOTO_URL)
+        from shivu import process_image_url
+        photo_url = await process_image_url(random.choice(PHOTO_URL))
 
         await context.bot.send_photo(chat_id=update.effective_chat.id, photo=photo_url, caption=caption, reply_markup=reply_markup, parse_mode='markdown')
 
     else:
-        photo_url = random.choice(PHOTO_URL)
+        from shivu import process_image_url
+        photo_url = await process_image_url(random.choice(PHOTO_URL))
         keyboard = [
             [InlineKeyboardButton("ADD ME", url=f'http://t.me/{BOT_USERNAME}?startgroup=new')],
             [InlineKeyboardButton("HELP", callback_data='help')]

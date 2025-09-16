@@ -123,6 +123,7 @@ async def summon(update: Update, context: CallbackContext):
             "style": style
         }
 
+        # For now using basic functionality - can add JFIF support later if needed in this file
         await update.message.reply_photo(
             character["url"],
             caption=caption

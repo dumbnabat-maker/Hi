@@ -77,9 +77,11 @@ async def send_image(update: Update, context: CallbackContext) -> None:
     if chat_id in first_correct_guesses:
         del first_correct_guesses[chat_id]
 
+    from shivu import process_image_url
+    processed_url = await process_image_url(character['img_url'])
     await context.bot.send_photo(
         chat_id=chat_id,
-        photo=character['img_url'],
+        photo=processed_url,
         caption=f"""A New {character['rarity']} Character Appeared...\n/marry Character Name and add in Your Harem""",
         parse_mode='Markdown')
 

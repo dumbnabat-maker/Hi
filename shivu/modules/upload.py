@@ -98,9 +98,11 @@ async def upload(update: Update, context: CallbackContext) -> None:
 
         try:
             rarity_emoji = rarity_styles.get(rarity, "")
+            from shivu import process_image_url
+            processed_url = await process_image_url(args[0])
             message = await context.bot.send_photo(
                 chat_id=CHARA_CHANNEL_ID,
-                photo=args[0],
+                photo=processed_url,
                 caption=f'<b>Character Name:</b> {character_name}\n<b>Anime Name:</b> {anime}\n<b>Rarity:</b> {rarity_emoji} {rarity}\n<b>ID:</b> {id}\nAdded by <a href="tg://user?id={update.effective_user.id}">{update.effective_user.first_name}</a>',
                 parse_mode='HTML'
             )

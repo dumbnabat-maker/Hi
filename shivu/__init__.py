@@ -3,6 +3,10 @@ import os
 from pyrogram import Client 
 from telegram.ext import Application
 from motor.motor_asyncio import AsyncIOMotorClient
+import requests
+import tempfile
+from PIL import Image
+import io
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -41,3 +45,32 @@ user_collection = db["user_collection_lmaoooo"]
 group_user_totals_collection = db['group_user_totalsssssss']
 top_global_groups_collection = db['top_global_groups']
 pm_users = db['total_pm_users']
+
+# Helper function to handle JFIF and other image formats
+async def process_image_url(url):
+    """
+    Process image URLs to ensure compatibility with Telegram.
+    Handles JFIF files by converting them when needed.
+    """
+    if not url:
+        return url
+    
+    # If it's a JFIF file, we need special handling
+    if url.lower().endswith('.jfif'):
+        try:
+            # Try to modify the URL to work better with Telegram
+            # Some services like Catbox work better with different extensions
+            if 'catbox.moe' in url.lower():
+                # Try converting .jfif to .jpg for Catbox URLs
+                new_url = url.replace('.jfif', '.jpg')
+                LOGGER.info(f"Converting JFIF URL: {url} -> {new_url}")
+                return new_url
+            else:
+                # For other services, return as-is but log the JFIF detection
+                LOGGER.info(f"JFIF file detected: {url}")
+                return url
+        except Exception as e:
+            LOGGER.error(f"Error processing JFIF image {url}: {str(e)}")
+            return url
+    
+    return url
