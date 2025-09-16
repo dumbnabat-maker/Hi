@@ -113,13 +113,16 @@ async def get_next_sequence_number(sequence_name):
     return sequence_document['sequence_value']
 
 async def upload(update: Update, context: CallbackContext) -> None:
+    if not update.effective_user or not update.message:
+        return
+        
     if str(update.effective_user.id) not in sudo_users:
         await update.message.reply_text('Ask My Owner...')
         return
 
     try:
         args = context.args
-        if len(args) != 4:
+        if not args or len(args) != 4:
             await update.message.reply_text(WRONG_FORMAT_TEXT)
             return
 
@@ -195,13 +198,16 @@ async def upload(update: Update, context: CallbackContext) -> None:
         await update.message.reply_text(f'Character Upload Unsuccessful. Error: {str(e)}\nIf you think this is a source error, forward to: {SUPPORT_CHAT}')
 
 async def delete(update: Update, context: CallbackContext) -> None:
+    if not update.effective_user or not update.message:
+        return
+        
     if str(update.effective_user.id) not in sudo_users:
         await update.message.reply_text('Ask my Owner to use this Command...')
         return
 
     try:
         args = context.args
-        if len(args) != 1:
+        if not args or len(args) != 1:
             await update.message.reply_text('Incorrect format... Please use: /delete ID')
             return
 
@@ -219,6 +225,9 @@ async def delete(update: Update, context: CallbackContext) -> None:
 
 async def summon(update: Update, context: CallbackContext) -> None:
     """Summon a random character for testing (sudo users only)"""
+    if not update.effective_user or not update.message:
+        return
+        
     if str(update.effective_user.id) not in sudo_users:
         await update.message.reply_text('Ask My Owner...')
         return
@@ -318,6 +327,9 @@ async def summon(update: Update, context: CallbackContext) -> None:
 
 async def find(update: Update, context: CallbackContext) -> None:
     """Find a character by ID number"""
+    if not update.effective_chat or not update.message:
+        return
+        
     try:
         args = context.args
         if not args:
@@ -362,13 +374,16 @@ async def find(update: Update, context: CallbackContext) -> None:
 
 
 async def update(update: Update, context: CallbackContext) -> None:
+    if not update.effective_user or not update.message:
+        return
+        
     if str(update.effective_user.id) not in sudo_users:
         await update.message.reply_text('You do not have permission to use this command.')
         return
 
     try:
         args = context.args
-        if len(args) != 3:
+        if not args or len(args) != 3:
             await update.message.reply_text('Incorrect format. Please use: /update id field new_value')
             return
 

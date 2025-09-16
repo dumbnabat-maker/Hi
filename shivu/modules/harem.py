@@ -11,6 +11,9 @@ from shivu import collection, user_collection, application, SUPPORT_CHAT
 
 async def sorts(update: Update, context: CallbackContext) -> None:
     """Set harem sorting preference - rarity or name"""
+    if not update.effective_user or not update.message:
+        return
+        
     user_id = update.effective_user.id
     args = context.args
     
@@ -53,13 +56,16 @@ async def sorts(update: Update, context: CallbackContext) -> None:
 
 
 async def harem(update: Update, context: CallbackContext, page=0) -> None:
+    if not update.effective_user:
+        return
+        
     user_id = update.effective_user.id
 
     user = await user_collection.find_one({'id': user_id})
     if not user:
         if update.message:
             await update.message.reply_text('You Have Not Guessed any Characters Yet..')
-        else:
+        elif update.callback_query:
             await update.callback_query.edit_message_text('You Have Not Guessed any Characters Yet..')
         return
 
@@ -88,7 +94,8 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
     if page < 0 or page >= total_pages:
         page = 0  
 
-    harem_message = f"<b>{escape(update.effective_user.first_name)}'s Harem - Page {page+1}/{total_pages}</b>\n"
+    user_name = update.effective_user.first_name or "User"
+    harem_message = f"<b>{escape(user_name)}'s Harem - Page {page+1}/{total_pages}</b>\n"
 
     
     current_characters = unique_characters[page*15:(page+1)*15]
@@ -131,9 +138,13 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
 
         if fav_character and 'img_url' in fav_character:
             if update.message:
-                from shivu import process_image_url
-                processed_url = await process_image_url(fav_character['img_url'])
-                await update.message.reply_photo(photo=processed_url, parse_mode='HTML', caption=harem_message, reply_markup=reply_markup)
+                try:
+                    from shivu import process_image_url
+                    processed_url = await process_image_url(fav_character['img_url'])
+                    await update.message.reply_photo(photo=processed_url, parse_mode='HTML', caption=harem_message, reply_markup=reply_markup)
+                except Exception as e:
+                    # If image fails, send text instead
+                    await update.message.reply_text(harem_message, parse_mode='HTML', reply_markup=reply_markup)
             else:
                 # For callback queries, update image and caption using media edit
                 try:
@@ -146,17 +157,19 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
                 except Exception:
                     # Fallback to just editing caption if media edit fails
                     try:
-                        if update.callback_query.message.caption != harem_message:
+                        if update.callback_query and update.callback_query.message and update.callback_query.message.caption != harem_message:
                             await update.callback_query.edit_message_caption(caption=harem_message, reply_markup=reply_markup, parse_mode='HTML')
-                        await update.callback_query.answer()
+                        if update.callback_query:
+                            await update.callback_query.answer()
                     except Exception:
-                        await update.callback_query.answer("Failed to update image")
+                        if update.callback_query:
+                            await update.callback_query.answer("Failed to update image")
         else:
             if update.message:
                 await update.message.reply_text(harem_message, parse_mode='HTML', reply_markup=reply_markup)
             else:
                 
-                if update.callback_query.message.text != harem_message:
+                if update.callback_query and update.callback_query.message and update.callback_query.message.text != harem_message:
                     await update.callback_query.edit_message_text(harem_message, parse_mode='HTML', reply_markup=reply_markup)
     else:
         
@@ -166,9 +179,13 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
 
             if 'img_url' in random_character:
                 if update.message:
-                    from shivu import process_image_url
-                    processed_url = await process_image_url(random_character['img_url'])
-                    await update.message.reply_photo(photo=processed_url, parse_mode='HTML', caption=harem_message, reply_markup=reply_markup)
+                    try:
+                        from shivu import process_image_url
+                        processed_url = await process_image_url(random_character['img_url'])
+                        await update.message.reply_photo(photo=processed_url, parse_mode='HTML', caption=harem_message, reply_markup=reply_markup)
+                    except Exception as e:
+                        # If image fails, send text instead
+                        await update.message.reply_text(harem_message, parse_mode='HTML', reply_markup=reply_markup)
                 else:
                     # For callback queries, update image and caption using media edit
                     try:
@@ -181,17 +198,19 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
                     except Exception:
                         # Fallback to just editing caption if media edit fails
                         try:
-                            if update.callback_query.message.caption != harem_message:
+                            if update.callback_query and update.callback_query.message and update.callback_query.message.caption != harem_message:
                                 await update.callback_query.edit_message_caption(caption=harem_message, reply_markup=reply_markup, parse_mode='HTML')
-                            await update.callback_query.answer()
+                            if update.callback_query:
+                                await update.callback_query.answer()
                         except Exception:
-                            await update.callback_query.answer("Failed to update image")
+                            if update.callback_query:
+                                await update.callback_query.answer("Failed to update image")
             else:
                 if update.message:
                     await update.message.reply_text(harem_message, parse_mode='HTML', reply_markup=reply_markup)
                 else:
                 
-                    if update.callback_query.message.text != harem_message:
+                    if update.callback_query and update.callback_query.message and update.callback_query.message.text != harem_message:
                         await update.callback_query.edit_message_text(harem_message, parse_mode='HTML', reply_markup=reply_markup)
         else:
             if update.message:
@@ -199,18 +218,25 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
 
 
 async def harem_callback(update: Update, context: CallbackContext) -> None:
+    if not update.callback_query or not update.callback_query.data:
+        return
+        
     query = update.callback_query
     data = query.data
 
+    data_parts = data.split(':')
+    if len(data_parts) != 3:
+        return
+        
+    _, page_str, user_id_str = data_parts
 
-    _, page, user_id = data.split(':')
+    try:
+        page = int(page_str)
+        user_id = int(user_id_str)
+    except ValueError:
+        return
 
-
-    page = int(page)
-    user_id = int(user_id)
-
-    
-    if query.from_user.id != user_id:
+    if query.from_user and query.from_user.id != user_id:
         await query.answer("its Not Your Harem", show_alert=True)
         return
 

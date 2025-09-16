@@ -83,17 +83,21 @@ favorites = {}
 # --- Bot Functions ---
 
 async def start(update: Update, context: CallbackContext):
-    await update.message.reply_text(
-        "✨ Welcome to the waifu collector Bot!\n\n"
-        "Commands:\n"
-        "/summon - Summon a random character\n"
-        "/marry - Marry your last summoned character\n"
-        "/collection - View your collection\n"
-        "/fav - View your favorite character\n"
-        "/setfav - Set your last summoned character as favorite"
-    )
+    if update.message:
+        await update.message.reply_text(
+            "✨ Welcome to the waifu collector Bot!\n\n"
+            "Commands:\n"
+            "/summon - Summon a random character\n"
+            "/marry - Marry your last summoned character\n"
+            "/collection - View your collection\n"
+            "/fav - View your favorite character\n"
+            "/setfav - Set your last summoned character as favorite"
+        )
 
 async def summon(update: Update, context: CallbackContext):
+    if not update.effective_user or not update.message:
+        return
+        
     user_id = update.effective_user.id
     
     # Debug logging (remove after testing)
@@ -132,6 +136,9 @@ async def summon(update: Update, context: CallbackContext):
         await update.message.reply_text("⚠️ No characters found for this rarity yet.")
 
 async def marry(update: Update, context: CallbackContext):
+    if not update.effective_user or not update.message:
+        return
+        
     user_id = update.effective_user.id
     
     if user_id in last_summons:
@@ -155,6 +162,9 @@ async def marry(update: Update, context: CallbackContext):
         await update.message.reply_text("❌ You need to /summon first before you can /marry.")
 
 async def collection(update: Update, context: CallbackContext):
+    if not update.effective_user or not update.message:
+        return
+        
     user_id = update.effective_user.id
     
     if user_id not in user_collections or not user_collections[user_id]:
@@ -200,6 +210,9 @@ async def handle_message(update: Update, context: CallbackContext):
         await summon(update, context)  # call your summon function
 
 async def fav(update: Update, context: CallbackContext):
+    if not update.effective_user or not update.message:
+        return
+        
     user_id = update.effective_user.id
     if user_id in favorites:
         fav_character = favorites[user_id]
@@ -210,6 +223,9 @@ async def fav(update: Update, context: CallbackContext):
         await update.message.reply_text("You don't have a favorite yet. Use /setfav first!")
 
 async def setfav(update: Update, context: CallbackContext):
+    if not update.effective_user or not update.message:
+        return
+        
     user_id = update.effective_user.id
     if user_id in last_summons:
         favorites[user_id] = last_summons[user_id]
