@@ -1,5 +1,5 @@
 import random
-from telegram import Update
+from telegram import Update, BotCommand
 from telegram.ext import Application, CommandHandler, CallbackContext, MessageHandler, filters
 import os
 
@@ -113,7 +113,7 @@ async def summon(update: Update, context: CallbackContext):
     if rarity in characters and characters[rarity]:
         character = random.choice(characters[rarity])
         style = rarity_styles.get(rarity, "")
-        caption = f"{style} [{rarity}] {character['name']} appeared!\n\nUse /marry to add it to your collection!"
+        caption = f"{style} A beauty has been summoned! Use /marry to add them to your harem!"
 
         # Store the summoned character for this user
         last_summons[user_id] = {
@@ -217,6 +217,20 @@ async def setfav(update: Update, context: CallbackContext):
     else:
         await update.message.reply_text("You haven't summoned any character yet!")
 
+async def post_init(application):
+    """Set bot commands after application starts to make them visible in Telegram"""
+    commands = [
+        BotCommand("start", "Start the bot and get help"),
+        BotCommand("summon", "Summon a random character (owner only)"),
+        BotCommand("marry", "Marry your last summoned character"),
+        BotCommand("collection", "View your character collection"),
+        BotCommand("fav", "View your favorite character"),
+        BotCommand("setfav", "Set your last summoned character as favorite"),
+    ]
+    
+    await application.bot.set_my_commands(commands)
+    print("🤖 Bot commands registered successfully")
+
 # --- Main Function ---
 def main():
     # Get token from environment variable
@@ -235,6 +249,9 @@ def main():
     application.add_handler(CommandHandler("fav", fav))
     application.add_handler(CommandHandler("setfav", setfav))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    # Set up post-init callback to register bot commands for Telegram visibility
+    application.post_init = post_init
 
     print("🤖 Summon Bot is starting...")
     application.run_polling(drop_pending_updates=True)
