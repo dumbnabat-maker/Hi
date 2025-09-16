@@ -234,7 +234,7 @@ async def post_init(application):
 # --- Main Function ---
 def main():
     # Get token from environment variable
-    token = os.environ.get("7814983224:AAE3J1yPGVHS6n49Cz_RiZ5_6bAMHAhKPDc")
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
     
     if not token:
         print("Error: TELEGRAM_BOT_TOKEN environment variable not set!")
