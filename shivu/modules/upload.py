@@ -231,13 +231,14 @@ async def summon(update: Update, context: CallbackContext) -> None:
             await update.message.reply_text('📭 No characters in database to summon!\n\nUpload some characters first using /upload')
             return
         
-        # Get a random character from the database
+        # Get a random character from the database (excluding Limited Edition)
         random_character = await collection.aggregate([
+            {'$match': {'rarity': {'$ne': 'Limited Edition'}}},
             {'$sample': {'size': 1}}
         ]).to_list(length=1)
         
         if not random_character:
-            await update.message.reply_text('❌ Failed to summon a character')
+            await update.message.reply_text('❌ No spawnable characters available!\n\nAll characters in the database appear to be Limited Edition or non-spawnable. Please upload some common characters using /upload.')
             return
             
         character = random_character[0]
