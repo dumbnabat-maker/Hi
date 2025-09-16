@@ -180,7 +180,7 @@ async def upload(update: Update, context: CallbackContext) -> None:
             await update.message.reply_text('CHARACTER ADDED....')
         except:
             await collection.insert_one(character)
-            update.effective_message.reply_text("Character Added but no Database Channel Found, Consider adding one.")
+            await update.effective_message.reply_text("Character Added but no Database Channel Found, Consider adding one.")
         
     except Exception as e:
         await update.message.reply_text(f'Character Upload Unsuccessful. Error: {str(e)}\nIf you think this is a source error, forward to: {SUPPORT_CHAT}')
