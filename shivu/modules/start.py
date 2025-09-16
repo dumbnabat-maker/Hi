@@ -41,7 +41,7 @@ async def start(update: Update, context: CallbackContext) -> None:
 
 🎮 **How it works:**
 • Add me to your group and I'll send random anime characters every 100 messages
-• Use /guess to catch characters and /marry to add them to your collection
+• Use /marry to catch characters and add them to your collection
 • Build your dream collection and trade with friends!
 • View your collection anytime with /collection
 
@@ -75,7 +75,7 @@ async def button(update: Update, context: CallbackContext) -> None:
         help_text = """
     ***Help Section:***
     
-***/guess: To Guess character (only works in group)***
+***/marry: To catch and marry characters (only works in group)***
 ***/fav: Add Your fav***
 ***/trade : To trade Characters***
 ***/gift: Give any Character from Your Collection to another user.. (only works in groups)***
@@ -99,7 +99,7 @@ async def button(update: Update, context: CallbackContext) -> None:
 
 🎮 **How it works:**
 • Add me to your group and I'll send random anime characters every 100 messages
-• Use /guess to catch characters and /marry to add them to your collection
+• Use /marry to catch characters and add them to your collection
 • Build your dream collection and trade with friends!
 • View your collection anytime with /collection
 
