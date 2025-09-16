@@ -1,4 +1,7 @@
 import urllib.request
+import urllib.parse
+import urllib.error
+import re
 from pymongo import ReturnDocument
 
 from telegram import Update
@@ -33,7 +36,69 @@ Use rarity number accordingly:
 6 = 🟥 Mythic
 7 = 🌌 Celestial
 8 = 🔥 Arcane
-9 = 💎 Limited Edition"""
+9 = 💎 Limited Edition
+
+✅ Supported: Discord CDN links, direct image URLs, and other standard image hosting services"""
+
+
+def is_discord_cdn_url(url):
+    """Check if the URL is a Discord CDN link"""
+    try:
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme not in ['http', 'https']:
+            return False
+        
+        discord_hosts = [
+            'cdn.discordapp.com',
+            'media.discordapp.net',
+            'attachments.discordapp.net',
+            'cdn.discord.com',
+            'media.discord.com'
+        ]
+        
+        return parsed.netloc in discord_hosts
+    except:
+        return False
+
+
+def validate_url(url):
+    """
+    Validate a URL and return whether it's accessible.
+    Handles Discord CDN links with special logic.
+    """
+    # For Discord CDN links, bypass full validation and just check structure
+    if is_discord_cdn_url(url):
+        try:
+            parsed = urllib.parse.urlparse(url)
+            # Basic validation for Discord CDN structure
+            if parsed.path and ('/' in parsed.path[1:]):  # Has meaningful path
+                return True, "Discord CDN link (validation bypassed)"
+            else:
+                return False, "Invalid Discord CDN link structure"
+        except:
+            return False, "Invalid Discord CDN URL format"
+    
+    # For non-Discord URLs, perform full validation
+    try:
+        # Create request with appropriate headers
+        req = urllib.request.Request(url)
+        req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
+        
+        # Try to open the URL
+        with urllib.request.urlopen(req, timeout=10) as response:
+            # Check if it's actually an image by checking content type or URL
+            content_type = response.headers.get('Content-Type', '')
+            if content_type.startswith('image/') or any(ext in url.lower() for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']):
+                return True, "Valid image URL"
+            else:
+                return False, "URL does not appear to be an image"
+                
+    except urllib.error.HTTPError as e:
+        return False, f"HTTP Error: {e.code}"
+    except urllib.error.URLError as e:
+        return False, f"URL Error: {str(e)}"
+    except Exception as e:
+        return False, f"Validation Error: {str(e)}"
 
 
 
@@ -63,11 +128,15 @@ async def upload(update: Update, context: CallbackContext) -> None:
         character_name = args[1].replace('-', ' ').title()
         anime = args[2].replace('-', ' ').title()
 
-        try:
-            urllib.request.urlopen(args[0])
-        except:
-            await update.message.reply_text('Invalid URL.')
+        # Validate URL with enhanced Discord CDN support
+        is_valid, validation_message = validate_url(args[0])
+        if not is_valid:
+            await update.message.reply_text(f'Invalid URL: {validation_message}')
             return
+        
+        # If it's a Discord CDN link, inform the user
+        if is_discord_cdn_url(args[0]):
+            await update.message.reply_text('✅ Discord CDN link detected - processing...', reply_to_message_id=update.message.message_id)
 
         rarity_map = {
             1: "Common", 
