@@ -231,9 +231,44 @@ async def summon(update: Update, context: CallbackContext) -> None:
             await update.message.reply_text('📭 No characters in database to summon!\n\nUpload some characters first using /upload')
             return
         
-        # Get a random character from the database (excluding Limited Edition)
+        # Get characters grouped by rarity for weighted selection
+        rarities_weights = {
+            "Common": 20,
+            "Uncommon": 20,
+            "Rare": 20,
+            "Epic": 20,
+            "Legendary": 10,
+            "Mythic": 5,
+            "Celestial": 0.5,
+            "Arcane": 0.0005,
+            "Limited Edition": 0
+        }
+        
+        # Get available rarities from database (excluding Limited Edition)
+        available_rarities = await collection.distinct('rarity', {'rarity': {'$ne': 'Limited Edition'}})
+        
+        if not available_rarities:
+            await update.message.reply_text('❌ No spawnable characters available!\n\nAll characters in the database appear to be Limited Edition or non-spawnable. Please upload some common characters using /upload.')
+            return
+        
+        # Filter weights to only include available rarities
+        available_weights = {rarity: rarities_weights.get(rarity, 0) for rarity in available_rarities if rarities_weights.get(rarity, 0) > 0}
+        
+        if not available_weights:
+            await update.message.reply_text('❌ No spawnable characters available!\n\nAll available character rarities have 0 spawn weight. Please upload some common characters using /upload.')
+            return
+        
+        # Use weighted random selection for rarity
+        import random
+        selected_rarity = random.choices(
+            population=list(available_weights.keys()),
+            weights=list(available_weights.values()),
+            k=1
+        )[0]
+        
+        # Get a random character from the selected rarity
         random_character = await collection.aggregate([
-            {'$match': {'rarity': {'$ne': 'Limited Edition'}}},
+            {'$match': {'rarity': selected_rarity}},
             {'$sample': {'size': 1}}
         ]).to_list(length=1)
         

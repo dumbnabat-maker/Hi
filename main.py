@@ -21,8 +21,8 @@ rarities = {
     "Epic": 20,
     "Legendary": 10,
     "Mythic": 5,
-    "Celestial": 2,
-    "Arcane": 1,
+    "Celestial": 0.5,
+    "Arcane": 0.0005,
     "Limited Edition": 0
 }
 

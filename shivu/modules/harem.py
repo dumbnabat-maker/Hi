@@ -135,9 +135,22 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
                 processed_url = await process_image_url(fav_character['img_url'])
                 await update.message.reply_photo(photo=processed_url, parse_mode='HTML', caption=harem_message, reply_markup=reply_markup)
             else:
-                
-                if update.callback_query.message.caption != harem_message:
-                    await update.callback_query.edit_message_caption(caption=harem_message, reply_markup=reply_markup, parse_mode='HTML')
+                # For callback queries, update image and caption using media edit
+                try:
+                    from shivu import process_image_url
+                    from telegram import InputMediaPhoto
+                    processed_url = await process_image_url(fav_character['img_url'])
+                    media = InputMediaPhoto(media=processed_url, caption=harem_message, parse_mode='HTML')
+                    await update.callback_query.edit_message_media(media=media, reply_markup=reply_markup)
+                    await update.callback_query.answer()
+                except Exception:
+                    # Fallback to just editing caption if media edit fails
+                    try:
+                        if update.callback_query.message.caption != harem_message:
+                            await update.callback_query.edit_message_caption(caption=harem_message, reply_markup=reply_markup, parse_mode='HTML')
+                        await update.callback_query.answer()
+                    except Exception:
+                        await update.callback_query.answer("Failed to update image")
         else:
             if update.message:
                 await update.message.reply_text(harem_message, parse_mode='HTML', reply_markup=reply_markup)
@@ -153,11 +166,26 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
 
             if 'img_url' in random_character:
                 if update.message:
-                    await update.message.reply_photo(photo=random_character['img_url'], parse_mode='HTML', caption=harem_message, reply_markup=reply_markup)
+                    from shivu import process_image_url
+                    processed_url = await process_image_url(random_character['img_url'])
+                    await update.message.reply_photo(photo=processed_url, parse_mode='HTML', caption=harem_message, reply_markup=reply_markup)
                 else:
-                    
-                    if update.callback_query.message.caption != harem_message:
-                        await update.callback_query.edit_message_caption(caption=harem_message, reply_markup=reply_markup, parse_mode='HTML')
+                    # For callback queries, update image and caption using media edit
+                    try:
+                        from shivu import process_image_url
+                        from telegram import InputMediaPhoto
+                        processed_url = await process_image_url(random_character['img_url'])
+                        media = InputMediaPhoto(media=processed_url, caption=harem_message, parse_mode='HTML')
+                        await update.callback_query.edit_message_media(media=media, reply_markup=reply_markup)
+                        await update.callback_query.answer()
+                    except Exception:
+                        # Fallback to just editing caption if media edit fails
+                        try:
+                            if update.callback_query.message.caption != harem_message:
+                                await update.callback_query.edit_message_caption(caption=harem_message, reply_markup=reply_markup, parse_mode='HTML')
+                            await update.callback_query.answer()
+                        except Exception:
+                            await update.callback_query.answer("Failed to update image")
             else:
                 if update.message:
                     await update.message.reply_text(harem_message, parse_mode='HTML', reply_markup=reply_markup)
