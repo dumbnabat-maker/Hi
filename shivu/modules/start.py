@@ -35,9 +35,17 @@ async def start(update: Update, context: CallbackContext) -> None:
         
         
         caption = f"""
-        ***Heyyyy...***
+✨ **Welcome to Waifu & Husbando Catcher!** ✨
 
-***I am An Open Source Character Catcher Bot...​Add Me in Your group.. And I will send Random Characters After.. every 100 messages in Group... Use /guess to.. Collect that Characters in Your Collection.. and see Collection by using /Harem... So add in Your groups and Collect Your harem***
+💕 **Your ultimate anime character collection bot!**
+
+🎮 **How it works:**
+• Add me to your group and I'll send random anime characters every 100 messages
+• Use /guess to catch characters and /marry to add them to your collection
+• Build your dream collection and trade with friends!
+• View your collection anytime with /collection
+
+🌟 **Ready to start your anime adventure?** Add me to your group now!
         """
         
         keyboard = [
@@ -85,9 +93,17 @@ async def button(update: Update, context: CallbackContext) -> None:
     elif query.data == 'back':
 
         caption = f"""
-        ***Hoyyyy...*** ✨
+✨ **Welcome to Waifu & Husbando Catcher!** ✨
 
-***I am An Open Source Character Catcher Bot..​Add Me in Your group.. And I will send Random Characters After.. every 100 messages in Group... Use /guess to.. Collect that Characters in Your Collection.. and see Collection by using /Harem... So add in Your groups and Collect Your harem***
+💕 **Your ultimate anime character collection bot!**
+
+🎮 **How it works:**
+• Add me to your group and I'll send random anime characters every 100 messages
+• Use /guess to catch characters and /marry to add them to your collection
+• Build your dream collection and trade with friends!
+• View your collection anytime with /collection
+
+🌟 **Ready to start your anime adventure?** Add me to your group now!
         """
 
         
