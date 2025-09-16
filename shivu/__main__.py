@@ -121,7 +121,33 @@ async def guess(update: Update, context: CallbackContext) -> None:
 
     name_parts = last_characters[chat_id]['name'].lower().split()
 
-    if sorted(name_parts) == sorted(guess.split()) or any(part == guess for part in name_parts):
+    # Smart matching: exact parts, partial matches, or fuzzy matches
+    def smart_name_match(guess, name_parts):
+        guess = guess.strip()
+        if not guess:
+            return False
+            
+        # 1. Exact full name match (any word order)
+        if sorted(name_parts) == sorted(guess.split()):
+            return True
+            
+        # 2. Exact single part match 
+        if any(part == guess for part in name_parts):
+            return True
+            
+        # 3. Partial match - guess is start of any name part (min 3 chars)
+        if len(guess) >= 3:
+            if any(part.startswith(guess) for part in name_parts):
+                return True
+                
+        # 4. Fuzzy match - guess contains or is contained in any part
+        if len(guess) >= 3:
+            if any(guess in part or part in guess for part in name_parts):
+                return True
+                
+        return False
+
+    if smart_name_match(guess, name_parts):
 
     
         first_correct_guesses[chat_id] = user_id
