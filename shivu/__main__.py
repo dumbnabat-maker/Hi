@@ -231,12 +231,40 @@ async def fav(update: Update, context: CallbackContext) -> None:
 
 
 
+async def post_init(application):
+    """Set bot commands after application starts"""
+    from telegram import BotCommand
+    
+    commands = [
+        BotCommand("start", "Start the bot and get help"),
+        BotCommand("harem", "View your character collection"),
+        BotCommand("fav", "Set favorite character by ID"),
+        BotCommand("find", "Find character by ID number"),  
+        BotCommand("sorts", "Set harem sorting preference"),
+        BotCommand("marry", "Guess and collect a character"),
+        BotCommand("protecc", "Alternative command to collect characters"),
+        BotCommand("grab", "Alternative command to collect characters"),
+        BotCommand("hunt", "Alternative command to collect characters"),
+        BotCommand("upload", "Upload new character (admin only)"),
+        BotCommand("summon", "Test character summon (admin only)"),
+        BotCommand("changetime", "Change spawn frequency (admin only)"),
+        BotCommand("ping", "Check bot status"),
+        BotCommand("topgroups", "View top groups leaderboard"),
+    ]
+    
+    await application.bot.set_my_commands(commands)
+    LOGGER.info("Bot commands set successfully")
+
+
 def main() -> None:
     """Run bot."""
 
     application.add_handler(CommandHandler(["protecc", "marry", "grab", "hunt"], guess, block=False))
     application.add_handler(CommandHandler("fav", fav, block=False))
     application.add_handler(MessageHandler(filters.ALL, message_counter, block=False))
+
+    # Set up post-init callback for bot commands
+    application.post_init = post_init
 
     application.run_polling(drop_pending_updates=True)
     
