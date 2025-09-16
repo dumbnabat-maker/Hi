@@ -245,17 +245,8 @@ async def summon(update: Update, context: CallbackContext) -> None:
         # Get rarity emoji
         rarity_emoji = rarity_styles.get(character.get('rarity', ''), "")
         
-        # Create beautiful summon display
-        caption = (
-            f"🌟 <b>A wild character appears!</b> 🌟\n\n"
-            f"✨ <b>{character['name']}</b> ✨\n"
-            f"🎌 <i>{character['anime']}</i>\n"
-            f"━━━━━━━━━━━━━━━━\n"
-            f"{rarity_emoji} <b>{character['rarity']}</b>\n"
-            f"🆔 <b>ID:</b> #{character['id']}\n"
-            f"━━━━━━━━━━━━━━━━\n"
-            f"🎮 <i>Test Summon</i>"
-        )
+        # Create beautiful summon display with hidden character details
+        caption = f"{rarity_emoji} A beauty has been summoned! Use /marry to add them to your harem!"
         
         # Process the image URL for compatibility
         from shivu import process_image_url

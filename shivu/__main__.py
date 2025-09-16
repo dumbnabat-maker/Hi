@@ -77,12 +77,27 @@ async def send_image(update: Update, context: CallbackContext) -> None:
     if chat_id in first_correct_guesses:
         del first_correct_guesses[chat_id]
 
+    # Rarity emoji mapping
+    rarity_emojis = {
+        "Common": "⚪️",
+        "Uncommon": "🟢", 
+        "Rare": "🔵",
+        "Epic": "🟣",
+        "Legendary": "🟡",
+        "Mythic": "🟥",
+        "Celestial": "🌌",
+        "Arcane": "🔥",
+        "Limited Edition": "💎"
+    }
+    
+    rarity_emoji = rarity_emojis.get(character['rarity'], "✨")
+
     from shivu import process_image_url
     processed_url = await process_image_url(character['img_url'])
     await context.bot.send_photo(
         chat_id=chat_id,
         photo=processed_url,
-        caption=f"""A New {character['rarity']} Character Appeared...\n/marry Character Name and add in Your Harem""",
+        caption=f"""{rarity_emoji} A beauty has been summoned! Use /marry to add them to your harem!""",
         parse_mode='Markdown')
 
 
