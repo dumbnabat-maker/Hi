@@ -1,7 +1,8 @@
 from pyrogram import filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from shivu import user_collection, shivuu
+from shivu import user_collection, shivuu, collection
+from shivu.config import sudo_users
 
 pending_trades = {}
 
@@ -203,5 +204,93 @@ async def on_callback_query(client, callback_query):
         del pending_gifts[(sender_id, receiver_id)]
 
         await callback_query.message.edit_text(f"You have successfully gifted your character to [{gift['receiver_first_name']}](tg://user?id={receiver_id})!")
+
+    elif callback_query.data == "cancel_gift":
+        
+        del pending_gifts[(sender_id, receiver_id)]
+
+        await callback_query.message.edit_text("❌️ Gift Cancelled....")
+
+
+@shivuu.on_message(filters.command("give"))
+async def give(client, message):
+    """Admin-only command to give characters to users"""
+    sender_id = message.from_user.id
+    
+    # Check if user is admin
+    if str(sender_id) not in sudo_users:
+        await message.reply_text("🚫 This command is only available to administrators.")
+        return
+    
+    # Command format: /give <character_id> <user_id>
+    # Or: /give <character_id> (when replying to a user)
+    
+    if message.reply_to_message:
+        # Giving to the user being replied to
+        if len(message.command) != 2:
+            await message.reply_text("📝 **Give Character**\n\nUsage when replying: `/give <character_id>`\nExample: `/give 1`")
+            return
+            
+        character_id = message.command[1]
+        receiver_id = message.reply_to_message.from_user.id
+        receiver_username = message.reply_to_message.from_user.username
+        receiver_first_name = message.reply_to_message.from_user.first_name
+        
+    else:
+        # Giving to a specific user ID
+        if len(message.command) != 3:
+            await message.reply_text("📝 **Give Character**\n\nUsage: `/give <character_id> <user_id>`\nExample: `/give 1 123456789`\n\nOr reply to a user: `/give <character_id>`")
+            return
+            
+        character_id = message.command[1]
+        try:
+            receiver_id = int(message.command[2])
+        except ValueError:
+            await message.reply_text("❌ Invalid user ID. Please provide a valid number.")
+            return
+            
+        receiver_username = None
+        receiver_first_name = "User"
+    
+    # Find the character in the database
+    character = await collection.find_one({'id': character_id})
+    if not character:
+        await message.reply_text(f"❌ Character with ID `{character_id}` not found in the database.")
+        return
+    
+    # Check if receiver exists in database, if not create entry
+    receiver = await user_collection.find_one({'id': receiver_id})
+    if receiver:
+        # Add character to existing user
+        await user_collection.update_one(
+            {'id': receiver_id}, 
+            {'$push': {'characters': character}}
+        )
+    else:
+        # Create new user entry
+        await user_collection.insert_one({
+            'id': receiver_id,
+            'username': receiver_username,
+            'first_name': receiver_first_name,
+            'characters': [character],
+        })
+    
+    # Success message
+    if message.reply_to_message:
+        await message.reply_text(
+            f"✅ **Character Given!**\n\n"
+            f"🎴 **{character['name']}** ({character['rarity']})\n"
+            f"📺 From: **{character['anime']}**\n"
+            f"👤 Given to: {message.reply_to_message.from_user.mention}\n"
+            f"🆔 Character ID: `{character['id']}`"
+        )
+    else:
+        await message.reply_text(
+            f"✅ **Character Given!**\n\n"
+            f"🎴 **{character['name']}** ({character['rarity']})\n"
+            f"📺 From: **{character['anime']}**\n"
+            f"👤 Given to: User ID `{receiver_id}`\n"
+            f"🆔 Character ID: `{character['id']}`"
+        )
 
 
