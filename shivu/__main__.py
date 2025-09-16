@@ -113,6 +113,7 @@ async def guess(update: Update, context: CallbackContext) -> None:
     user_id = update.effective_user.id
 
     if chat_id not in last_characters:
+        await update.message.reply_text('🚫 No character has been summoned yet!\n\nCharacters appear automatically every 100 messages, or admins can use /summon to spawn one manually.')
         return
 
     if chat_id in first_correct_guesses:
