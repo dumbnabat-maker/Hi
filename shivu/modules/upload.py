@@ -107,11 +107,9 @@ async def get_next_sequence_number(sequence_name):
     sequence_document = await sequence_collection.find_one_and_update(
         {'_id': sequence_name}, 
         {'$inc': {'sequence_value': 1}}, 
+        upsert=True,
         return_document=ReturnDocument.AFTER
     )
-    if not sequence_document:
-        await sequence_collection.insert_one({'_id': sequence_name, 'sequence_value': 0})
-        return 0
     return sequence_document['sequence_value']
 
 async def upload(update: Update, context: CallbackContext) -> None:
@@ -155,7 +153,7 @@ async def upload(update: Update, context: CallbackContext) -> None:
             await update.message.reply_text('Invalid rarity. Please use 1-9:\n1=Common, 2=Uncommon, 3=Rare, 4=Epic, 5=Legendary, 6=Mythic, 7=Celestial, 8=Arcane, 9=Limited Edition')
             return
 
-        id = str(await get_next_sequence_number('character_id')).zfill(2)
+        id = str(await get_next_sequence_number('character_id'))
 
         character = {
             'img_url': args[0],
@@ -169,10 +167,21 @@ async def upload(update: Update, context: CallbackContext) -> None:
             rarity_emoji = rarity_styles.get(rarity, "")
             from shivu import process_image_url
             processed_url = await process_image_url(args[0])
+            # Create neat and pretty caption format
+            caption = (
+                f"✨ <b>{character_name}</b> ✨\n"
+                f"🎌 <i>{anime}</i>\n"
+                f"━━━━━━━━━━━━━━━━\n"
+                f"{rarity_emoji} <b>{rarity}</b>\n"
+                f"🆔 <b>ID:</b> #{id}\n"
+                f"━━━━━━━━━━━━━━━━\n"
+                f"📤 Added by <a href='tg://user?id={update.effective_user.id}'>{update.effective_user.first_name}</a>"
+            )
+            
             message = await context.bot.send_photo(
                 chat_id=CHARA_CHANNEL_ID,
                 photo=processed_url,
-                caption=f'<b>Character Name:</b> {character_name}\n<b>Anime Name:</b> {anime}\n<b>Rarity:</b> {rarity_emoji} {rarity}\n<b>ID:</b> {id}\nAdded by <a href="tg://user?id={update.effective_user.id}">{update.effective_user.first_name}</a>',
+                caption=caption,
                 parse_mode='HTML'
             )
             character['message_id'] = message.message_id
@@ -207,6 +216,51 @@ async def delete(update: Update, context: CallbackContext) -> None:
             await update.message.reply_text('Deleted Successfully from db, but character not found In Channel')
     except Exception as e:
         await update.message.reply_text(f'{str(e)}')
+
+async def find(update: Update, context: CallbackContext) -> None:
+    """Find a character by ID number"""
+    try:
+        args = context.args
+        if not args:
+            await update.message.reply_text('🔍 <b>Find Character</b>\n\nUsage: /find <id>\nExample: /find 1', parse_mode='HTML')
+            return
+        
+        character_id = args[0]
+        
+        # Search for character by ID
+        character = await collection.find_one({'id': character_id})
+        
+        if not character:
+            await update.message.reply_text(f'❌ No character found with ID #{character_id}')
+            return
+        
+        # Get rarity emoji
+        rarity_emoji = rarity_styles.get(character.get('rarity', ''), "")
+        
+        # Create beautiful character display
+        caption = (
+            f"✨ <b>{character['name']}</b> ✨\n"
+            f"🎌 <i>{character['anime']}</i>\n"
+            f"━━━━━━━━━━━━━━━━\n"
+            f"{rarity_emoji} <b>{character['rarity']}</b>\n"
+            f"🆔 <b>ID:</b> #{character['id']}\n"
+            f"━━━━━━━━━━━━━━━━"
+        )
+        
+        # Process the image URL for compatibility
+        from shivu import process_image_url
+        processed_url = await process_image_url(character['img_url'])
+        
+        await context.bot.send_photo(
+            chat_id=update.effective_chat.id,
+            photo=processed_url,
+            caption=caption,
+            parse_mode='HTML'
+        )
+        
+    except Exception as e:
+        await update.message.reply_text(f'❌ Error finding character: {str(e)}')
+
 
 async def update(update: Update, context: CallbackContext) -> None:
     if str(update.effective_user.id) not in sudo_users:
@@ -263,7 +317,15 @@ async def update(update: Update, context: CallbackContext) -> None:
             message = await context.bot.send_photo(
                 chat_id=CHARA_CHANNEL_ID,
                 photo=new_value,
-                caption=f'<b>Character Name:</b> {character["name"]}\n<b>Anime Name:</b> {character["anime"]}\n<b>Rarity:</b> {rarity_emoji} {character["rarity"]}\n<b>ID:</b> {character["id"]}\nUpdated by <a href="tg://user?id={update.effective_user.id}">{update.effective_user.first_name}</a>',
+                caption=(
+                    f"✨ <b>{character['name']}</b> ✨\n"
+                    f"🎌 <i>{character['anime']}</i>\n"
+                    f"━━━━━━━━━━━━━━━━\n"
+                    f"{rarity_emoji} <b>{character['rarity']}</b>\n"
+                    f"🆔 <b>ID:</b> #{character['id']}\n"
+                    f"━━━━━━━━━━━━━━━━\n"
+                    f"📝 Updated by <a href='tg://user?id={update.effective_user.id}'>{update.effective_user.first_name}</a>"
+                ),
                 parse_mode='HTML'
             )
             character['message_id'] = message.message_id
@@ -271,10 +333,22 @@ async def update(update: Update, context: CallbackContext) -> None:
         else:
             
             rarity_emoji = rarity_styles.get(character["rarity"], "")
+            
+            # Create updated beautiful caption
+            updated_caption = (
+                f"✨ <b>{character['name']}</b> ✨\n"
+                f"🎌 <i>{character['anime']}</i>\n"
+                f"━━━━━━━━━━━━━━━━\n"
+                f"{rarity_emoji} <b>{character['rarity']}</b>\n"
+                f"🆔 <b>ID:</b> #{character['id']}\n"
+                f"━━━━━━━━━━━━━━━━\n"
+                f"📝 Updated by <a href='tg://user?id={update.effective_user.id}'>{update.effective_user.first_name}</a>"
+            )
+            
             await context.bot.edit_message_caption(
                 chat_id=CHARA_CHANNEL_ID,
                 message_id=character['message_id'],
-                caption=f'<b>Character Name:</b> {character["name"]}\n<b>Anime Name:</b> {character["anime"]}\n<b>Rarity:</b> {rarity_emoji} {character["rarity"]}\n<b>ID:</b> {character["id"]}\nUpdated by <a href="tg://user?id={update.effective_user.id}">{update.effective_user.first_name}</a>',
+                caption=updated_caption,
                 parse_mode='HTML'
             )
 
@@ -286,5 +360,7 @@ UPLOAD_HANDLER = CommandHandler('upload', upload, block=False)
 application.add_handler(UPLOAD_HANDLER)
 DELETE_HANDLER = CommandHandler('delete', delete, block=False)
 application.add_handler(DELETE_HANDLER)
+FIND_HANDLER = CommandHandler('find', find, block=False)
+application.add_handler(FIND_HANDLER)
 UPDATE_HANDLER = CommandHandler('update', update, block=False)
 application.add_handler(UPDATE_HANDLER)
