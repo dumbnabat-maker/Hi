@@ -241,6 +241,15 @@ async def summon(update: Update, context: CallbackContext) -> None:
             return
             
         character = random_character[0]
+        chat_id = update.effective_chat.id
+        
+        # Store character for marry command to find it
+        from shivu.__main__ import last_characters, first_correct_guesses
+        last_characters[chat_id] = character
+        
+        # Clear any existing guesses for this chat
+        if chat_id in first_correct_guesses:
+            del first_correct_guesses[chat_id]
         
         # Get rarity emoji
         rarity_emoji = rarity_styles.get(character.get('rarity', ''), "")
@@ -253,7 +262,7 @@ async def summon(update: Update, context: CallbackContext) -> None:
         processed_url = await process_image_url(character['img_url'])
         
         await context.bot.send_photo(
-            chat_id=update.effective_chat.id,
+            chat_id=chat_id,
             photo=processed_url,
             caption=caption,
             parse_mode='HTML'
