@@ -257,16 +257,24 @@ async def summon(update: Update, context: CallbackContext) -> None:
         # Create beautiful summon display with hidden character details
         caption = f"{rarity_emoji} A beauty has been summoned! Use /marry to add them to your harem!"
         
-        # Process the image URL for compatibility
-        from shivu import process_image_url
-        processed_url = await process_image_url(character['img_url'])
-        
-        await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=processed_url,
-            caption=caption,
-            parse_mode='HTML'
-        )
+        # Process the image URL for compatibility and handle errors gracefully
+        try:
+            from shivu import process_image_url
+            processed_url = await process_image_url(character['img_url'])
+            
+            await context.bot.send_photo(
+                chat_id=chat_id,
+                photo=processed_url,
+                caption=caption,
+                parse_mode='HTML'
+            )
+        except Exception as img_error:
+            # If image fails to load, send text message instead
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=f"{caption}\n\n⚠️ Image could not be loaded - {character['name']} from {character['anime']}",
+                parse_mode='HTML'
+            )
         
     except Exception as e:
         await update.message.reply_text(f'❌ Error summoning character: {str(e)}')
