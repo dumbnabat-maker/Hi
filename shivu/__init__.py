@@ -1,6 +1,6 @@
 import logging  
 import os
-from pyrogram import Client 
+from pyrogram.client import Client 
 from telegram.ext import Application
 from motor.motor_asyncio import AsyncIOMotorClient
 import requests
@@ -34,6 +34,23 @@ UPDATE_CHAT = Config.UPDATE_CHAT
 BOT_USERNAME = Config.BOT_USERNAME 
 sudo_users = Config.sudo_users
 OWNER_ID = Config.OWNER_ID 
+
+# Validate required environment variables
+if not TOKEN:
+    raise ValueError("TELEGRAM_BOT_TOKEN is required but not provided")
+if not api_hash:
+    raise ValueError("TELEGRAM_API_HASH is required but not provided")
+if not mongo_url:
+    raise ValueError("MONGODB_URL is required but not provided")
+if api_id == 0:
+    raise ValueError("TELEGRAM_API_ID is required but not provided")
+
+# Clean and validate MongoDB URL
+mongo_url = mongo_url.strip()
+if mongo_url.endswith(','):
+    mongo_url = mongo_url.rstrip(',')
+if not mongo_url or mongo_url == ',':
+    raise ValueError("MONGODB_URL is empty or contains only commas")
 
 application = Application.builder().token(TOKEN).build()
 shivuu = Client("Shivu", api_id, api_hash, bot_token=TOKEN)
