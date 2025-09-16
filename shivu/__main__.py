@@ -268,9 +268,6 @@ async def post_init(application):
         BotCommand("find", "Find character by ID number"),  
         BotCommand("sorts", "Set harem sorting preference"),
         BotCommand("marry", "Guess and collect a character"),
-        BotCommand("protecc", "Alternative command to collect characters"),
-        BotCommand("grab", "Alternative command to collect characters"),
-        BotCommand("hunt", "Alternative command to collect characters"),
         BotCommand("upload", "Upload new character (admin only)"),
         BotCommand("summon", "Test character summon (admin only)"),
         BotCommand("changetime", "Change spawn frequency (admin only)"),
@@ -285,7 +282,7 @@ async def post_init(application):
 def main() -> None:
     """Run bot."""
 
-    application.add_handler(CommandHandler(["protecc", "marry", "grab", "hunt"], guess, block=False))
+    application.add_handler(CommandHandler(["marry"], guess, block=False))
     application.add_handler(CommandHandler("fav", fav, block=False))
     application.add_handler(MessageHandler(filters.ALL, message_counter, block=False))
 
