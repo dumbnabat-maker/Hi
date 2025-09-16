@@ -87,7 +87,7 @@ async def start(update: Update, context: CallbackContext):
         "✨ Welcome to the waifu collector Bot!\n\n"
         "Commands:\n"
         "/summon - Summon a random character\n"
-        "/collect - Collect your last summoned character\n"
+        "/marry - Marry your last summoned character\n"
         "/collection - View your collection\n"
         "/fav - View your favorite character\n"
         "/setfav - Set your last summoned character as favorite"
@@ -113,7 +113,7 @@ async def summon(update: Update, context: CallbackContext):
     if rarity in characters and characters[rarity]:
         character = random.choice(characters[rarity])
         style = rarity_styles.get(rarity, "")
-        caption = f"{style} [{rarity}] {character['name']} appeared!\n\nUse /collect to add it to your collection!"
+        caption = f"{style} [{rarity}] {character['name']} appeared!\n\nUse /marry to add it to your collection!"
 
         # Store the summoned character for this user
         last_summons[user_id] = {
@@ -130,7 +130,7 @@ async def summon(update: Update, context: CallbackContext):
     else:
         await update.message.reply_text("⚠️ No characters found for this rarity yet.")
 
-async def collect(update: Update, context: CallbackContext):
+async def marry(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
     
     if user_id in last_summons:
@@ -147,11 +147,11 @@ async def collect(update: Update, context: CallbackContext):
         del last_summons[user_id]
         
         await update.message.reply_text(
-            f"✅ You collected {summon_info['style']} {summon_info['name']} ({summon_info['rarity']})!\n\n"
+            f"✅ You married {summon_info['style']} {summon_info['name']} ({summon_info['rarity']})!\n\n"
             f"Total characters in collection: {len(user_collections[user_id])}"
         )
     else:
-        await update.message.reply_text("❌ You need to /summon first before you can /collect.")
+        await update.message.reply_text("❌ You need to /summon first before you can /marry.")
 
 async def collection(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
@@ -229,7 +229,7 @@ def main():
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("summon", summon))
-    application.add_handler(CommandHandler("collect", collect))
+    application.add_handler(CommandHandler("marry", marry))
     application.add_handler(CommandHandler("collection", collection))
     application.add_handler(CommandHandler("fav", fav))
     application.add_handler(CommandHandler("setfav", setfav))
