@@ -92,13 +92,20 @@ async def send_image(update: Update, context: CallbackContext) -> None:
     
     rarity_emoji = rarity_emojis.get(character['rarity'], "✨")
 
-    from shivu import process_image_url
-    processed_url = await process_image_url(character['img_url'])
-    await context.bot.send_photo(
-        chat_id=chat_id,
-        photo=processed_url,
-        caption=f"""{rarity_emoji} A beauty has been summoned! Use /marry to add them to your harem!""",
-        parse_mode='Markdown')
+    try:
+        from shivu import process_image_url
+        processed_url = await process_image_url(character['img_url'])
+        await context.bot.send_photo(
+            chat_id=chat_id,
+            photo=processed_url,
+            caption=f"""{rarity_emoji} A beauty has been summoned! Use /marry to add them to your harem!""",
+            parse_mode='Markdown')
+    except Exception as e:
+        LOGGER.error(f"Error sending character image: {str(e)}")
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"{rarity_emoji} A beauty has been summoned! Use /marry to add them to your harem!\n\n⚠️ Image could not be loaded",
+            parse_mode='Markdown')
 
 
 async def guess(update: Update, context: CallbackContext) -> None:
@@ -281,7 +288,7 @@ async def post_init(application):
 
 def main() -> None:
     """Run bot."""
-
+    
     application.add_handler(CommandHandler(["marry"], guess, block=False))
     application.add_handler(CommandHandler("fav", fav, block=False))
     application.add_handler(MessageHandler(filters.ALL, message_counter, block=False))
@@ -295,4 +302,3 @@ if __name__ == "__main__":
     shivuu.start()
     LOGGER.info("Bot started")
     main()
-
