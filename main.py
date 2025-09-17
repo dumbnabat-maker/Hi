@@ -15,14 +15,14 @@ OWNER_ID = int(owner_id_match.group()) if owner_id_match else 0
 # --- Global Variables ---
 
 rarities = {
-    "Common": 20,
-    "Uncommon": 20,
-    "Rare": 20,
-    "Epic": 20,
-    "Legendary": 10,
-    "Mythic": 5,
-    "Celestial": 0.5,
-    "Arcane": 0.0005,
+    "Common": 0.8,
+    "Uncommon": 0.7,
+    "Rare": 0.6,
+    "Epic": 0.6,
+    "Legendary": 0.6,
+    "Mythic": 0.5,
+    "Celestial": 0.005,
+    "Arcane": 0.00005,
     "Limited Edition": 0
 }
 
@@ -97,17 +97,18 @@ async def start(update: Update, context: CallbackContext):
 async def summon(update: Update, context: CallbackContext):
     if not update.effective_user or not update.message:
         return
-        
+
     user_id = update.effective_user.id
-    
-    # Debug logging (remove after testing)
-    print(f"DEBUG: User ID: {user_id}, Owner ID: {OWNER_ID}, Type: {type(user_id)}, {type(OWNER_ID)}")
-    
-    # Check if user is the bot owner
+    chat_id = update.effective_chat.id
+
+    # Debug logging (optional, can remove later)
+    print(f"DEBUG: User ID: {user_id}, Owner ID: {OWNER_ID}")
+
+    # Only allow bot owner to manually summon
     if user_id != OWNER_ID:
-        await update.message.reply_text(f"🚫 Only the bot owner can manually summon characters!\nYour ID: {user_id}, Owner ID: {OWNER_ID}")
+        await update.message.reply_text("🚫 Only the bot owner can manually summon characters!")
         return
-    
+
     rarity = random.choices(
         population=list(rarities.keys()),
         weights=list(rarities.values()),
@@ -119,48 +120,47 @@ async def summon(update: Update, context: CallbackContext):
         style = rarity_styles.get(rarity, "")
         caption = f"{style} A beauty has been summoned! Use /marry to add them to your harem!"
 
-        # Store the summoned character for this user
-        last_summons[user_id] = {
+        # Store summon under chat_id (so all users in the chat can try to marry)
+        last_summons[chat_id] = {
             "name": character["name"],
             "rarity": rarity,
             "url": character["url"],
             "style": style
         }
 
-        # For now using basic functionality - can add JFIF support later if needed in this file
         await update.message.reply_photo(
             character["url"],
             caption=caption
         )
     else:
         await update.message.reply_text("⚠️ No characters found for this rarity yet.")
-
 async def marry(update: Update, context: CallbackContext):
     if not update.effective_user or not update.message:
         return
-        
+
     user_id = update.effective_user.id
-    
-    if user_id in last_summons:
-        summon_info = last_summons[user_id]
-        
+    chat_id = update.effective_chat.id
+
+    # Look up the last summon in this chat
+    if chat_id in last_summons:
+        summon_info = last_summons[chat_id]
+
         # Initialize user collection if not exists
         if user_id not in user_collections:
             user_collections[user_id] = []
-        
-        # Add character to collection
+
+        # Add character to this user's collection
         user_collections[user_id].append(summon_info)
-        
-        # Remove from last summons
-        del last_summons[user_id]
-        
+
+        # Remove summon from chat so others can't claim it again
+        del last_summons[chat_id]
+
         await update.message.reply_text(
             f"✅ You married {summon_info['style']} {summon_info['name']} ({summon_info['rarity']})!\n\n"
-            f"Total characters in collection: {len(user_collections[user_id])}"
+            f"Total characters in your collection: {len(user_collections[user_id])}"
         )
     else:
-        await update.message.reply_text("❌ You need to /summon first before you can /marry.")
-
+        await update.message.reply_text("❌ No summon available right now. Wait for one to appear or use /spawn if you're the owner.") 
 async def collection(update: Update, context: CallbackContext):
     if not update.effective_user or not update.message:
         return
