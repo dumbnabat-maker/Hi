@@ -91,11 +91,15 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
                 # For empty query (like Yandex), show simplified info for better performance
                 caption = f"<b>{character['name']}</b>\n🏖️: <b>{character['anime']}</b>\n✨ <b>{character['rarity']}</b>\n🆔️: <b>{character['id']}</b>"
             
+            # Process image URL for compatibility (handles JFIF and other formats)
+            from shivu import process_image_url
+            processed_url = await process_image_url(character['img_url'])
+            
             results.append(
                 InlineQueryResultPhoto(
-                    thumbnail_url=character['img_url'],
+                    thumbnail_url=processed_url,
                     id=f"{character['id']}_{time.time()}",
-                    photo_url=character['img_url'],
+                    photo_url=processed_url,
                     caption=caption,
                     parse_mode='HTML'
                 )
