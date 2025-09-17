@@ -8,18 +8,11 @@ from telegram import Update, InlineQueryResultPhoto
 from telegram.ext import InlineQueryHandler, CallbackContext, CommandHandler 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-from shivu import user_collection, collection, application, db
+from shivu import user_collection, collection, application, db, LOGGER
 
 
-# collection
-db.characters.create_index([('id', ASCENDING)])
-db.characters.create_index([('anime', ASCENDING)])
-db.characters.create_index([('img_url', ASCENDING)])
-
-# user_collection
-db.user_collection.create_index([('characters.id', ASCENDING)])
-db.user_collection.create_index([('characters.name', ASCENDING)])
-db.user_collection.create_index([('characters.img_url', ASCENDING)])
+# Database indexes will be created automatically by MongoDB when needed
+# Removed manual index creation to avoid async/await issues
 
 all_characters_cache = TTLCache(maxsize=10000, ttl=36000)
 user_collection_cache = TTLCache(maxsize=10000, ttl=60)
@@ -30,25 +23,59 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
         
     query = update.inline_query.query.strip()
     offset = int(update.inline_query.offset) if update.inline_query.offset else 0
+    
+    # Debug logging to help troubleshoot
+    LOGGER.info(f"Inline query received: '{query}', offset: {offset}")
 
     if query.startswith('collection.'):
         # Handle user collection queries
-        user_id, *search_terms = query.split(' ')[0].split('.')[1], ' '.join(query.split(' ')[1:])
-        if user_id.isdigit():
-            if user_id in user_collection_cache:
-                user = user_collection_cache[user_id]
-            else:
-                user = await user_collection.find_one({'id': int(user_id)})
-                user_collection_cache[user_id] = user
+        user = None  # Initialize to prevent NameError
+        all_characters = []
+        
+        try:
+            # Parse the query: "collection.user_id optional_search_terms"
+            parts = query.split(' ', 1)  # Split into max 2 parts
+            collection_part = parts[0]  # "collection.user_id"
+            search_terms = parts[1] if len(parts) > 1 else ""  # Optional search terms
+            
+            # Extract user_id from "collection.user_id"
+            if '.' in collection_part:
+                user_id = collection_part.split('.')[1]
+                
+                if user_id.isdigit():
+                    user_id_int = int(user_id)
+                    
+                    # Get user from cache or database
+                    if user_id in user_collection_cache:
+                        user = user_collection_cache[user_id]
+                    else:
+                        user = await user_collection.find_one({'id': user_id_int})
+                        if user:
+                            user_collection_cache[user_id] = user
 
-            if user:
-                all_characters = list({v['id']:v for v in user['characters']}.values())
-                if search_terms:
-                    regex = re.compile(' '.join(search_terms), re.IGNORECASE)
-                    all_characters = [character for character in all_characters if regex.search(character['name']) or regex.search(character['anime'])]
+                    if user and 'characters' in user:
+                        # Get unique characters by ID
+                        all_characters = list({v['id']:v for v in user['characters']}.values())
+                        
+                        # Apply search filter if provided
+                        if search_terms.strip():
+                            regex = re.compile(search_terms.strip(), re.IGNORECASE)
+                            all_characters = [character for character in all_characters 
+                                           if regex.search(character.get('name', '')) or 
+                                              regex.search(character.get('anime', ''))]
+                        
+                        LOGGER.info(f"Found {len(all_characters)} characters for user {user_id}")
+                    else:
+                        all_characters = []
+                        LOGGER.info(f"No user found or no characters for user {user_id}")
+                else:
+                    all_characters = []
+                    LOGGER.info(f"Invalid user ID format: {user_id}")
             else:
                 all_characters = []
-        else:
+                LOGGER.info(f"Invalid collection query format: {query}")
+        except Exception as e:
+            LOGGER.error(f"Error processing collection query '{query}': {str(e)}")
             all_characters = []
     else:
         # Handle general character search

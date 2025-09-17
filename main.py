@@ -258,13 +258,11 @@ def main():
     
     application = Application.builder().token(token).build()
 
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("summon", summon))
-    application.add_handler(CommandHandler("marry", marry))
-    application.add_handler(CommandHandler("collection", collection))
-    application.add_handler(CommandHandler("fav", fav))
-    application.add_handler(CommandHandler("setfav", setfav))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    # Removed conflicting handlers - shivu system handles these commands
+    # application.add_handler(CommandHandler("summon", summon))  # Conflicts with shivu summon
+    # application.add_handler(CommandHandler("marry", marry))    # Conflicts with shivu marry/guess
+    # application.add_handler(CommandHandler("collection", collection))  # Conflicts with shivu harem
+    # application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Conflicts with shivu message_counter
 
     # Set up post-init callback to register bot commands for Telegram visibility
     application.post_init = post_init
