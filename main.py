@@ -21,7 +21,7 @@ rarities = {
     "Epic": 0.6,
     "Legendary": 0.6,
     "Mythic": 0.5,
-    "Celestial": 0.005,
+    "Celestial": 0.1,
     "Arcane": 0.00005,
     "Limited Edition": 0
 }
@@ -94,40 +94,51 @@ async def start(update: Update, context: CallbackContext):
             "/setfav - Set your last summoned character as favorite"
         )
 
-async def summon(update: Update, context: CallbackContext):
-    if not update.effective_user or not update.message:
-        return
-
-    user_id = update.effective_user.id
-    chat_id = update.effective_chat.id
-
-    # Debug logging (optional, can remove later)
-    print(f"DEBUG: User ID: {user_id}, Owner ID: {OWNER_ID}")
-
-    # Only allow bot owner to manually summon
-    if user_id != OWNER_ID:
-        await update.message.reply_text("🚫 Only the bot owner can manually summon characters!")
-        return
-
-    rarity = random.choices(
+# --- Helper Function ---
+def choose_rarity():
+    return random.choices(
         population=list(rarities.keys()),
         weights=list(rarities.values()),
         k=1
     )[0]
 
+
+# --- Summon Command ---
+async def summon(update: Update, context: CallbackContext):
+    if not update.effective_user or not update.message:
+        return
+
+    user_id = update.effective_user.id
+
+    # Debug logging (optional)
+    print(f"DEBUG: User ID: {user_id}, Owner ID: {OWNER_ID}")
+
+    # Check if user is the bot owner
+    if user_id != OWNER_ID:
+        await update.message.reply_text(
+            f"🚫 Only the bot owner can manually summon characters!\n"
+            f"Your ID: {user_id}, Owner ID: {OWNER_ID}"
+        )
+        return
+
+    # Pick rarity using proper weighted logic
+    rarity = choose_rarity()
+
+    # Make sure we actually have characters in that rarity
     if rarity in characters and characters[rarity]:
         character = random.choice(characters[rarity])
         style = rarity_styles.get(rarity, "")
         caption = f"{style} A beauty has been summoned! Use /marry to add them to your harem!"
 
-        # Store summon under chat_id (so all users in the chat can try to marry)
-        last_summons[chat_id] = {
+        # Save summon info for this user
+        last_summons[user_id] = {
             "name": character["name"],
             "rarity": rarity,
             "url": character["url"],
             "style": style
         }
 
+        # Send character photo
         await update.message.reply_photo(
             character["url"],
             caption=caption
@@ -221,7 +232,46 @@ async def fav(update: Update, context: CallbackContext):
         await update.message.reply_photo(fav_character['url'])
     else:
         await update.message.reply_text("You don't have a favorite yet. Use /setfav first!")
+async def inline_query(update: Update, context: CallbackContext):
+    query = update.inline_query.query.strip()
+    offset = int(update.inline_query.offset or 0)  # page offset
+    page_size = 50
 
+    all_characters = []
+    for rarity, chara_list in characters.items():
+        for chara in chara_list:
+            all_characters.append({
+                "name": chara["name"],
+                "rarity": rarity,
+                "url": chara["url"],
+                "style": rarity_styles.get(rarity, "")
+            })
+
+    # Optional: search filter
+    if query:
+        all_characters = [c for c in all_characters if query.lower() in c["name"].lower()]
+
+    # Paginate
+    page = all_characters[offset:offset + page_size]
+
+    results = []
+    for idx, chara in enumerate(page):
+        results.append(
+            InlineQueryResultPhoto(
+                id=str(offset + idx),
+                photo_url=chara["url"],
+                thumb_url=chara["url"],
+                title=f"{chara['name']} ({chara['rarity']})",
+                description=f"Rarity: {chara['rarity']}",
+                caption=f"{chara['style']} {chara['name']} ({chara['rarity']})"
+            )
+        )
+
+    # Set next offset
+    next_offset = str(offset + page_size) if len(all_characters) > offset + page_size else ""
+
+    await update.inline_query.answer(results, cache_time=1, next_offset=next_offset)
+application.add_handler(InlineQueryHandler(inline_query))
 async def setfav(update: Update, context: CallbackContext):
     if not update.effective_user or not update.message:
         return
