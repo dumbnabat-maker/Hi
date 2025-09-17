@@ -7,7 +7,7 @@ import random
 from telegram.ext import CommandHandler, CallbackContext, CallbackQueryHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-from shivu import collection, user_collection, application, SUPPORT_CHAT
+from shivu import collection, user_collection, application, SUPPORT_CHAT, CHARA_CHANNEL_ID
 
 async def sorts(update: Update, context: CallbackContext) -> None:
     """Set harem sorting preference - rarity or name"""
@@ -23,7 +23,8 @@ async def sorts(update: Update, context: CallbackContext) -> None:
             "Set how you want your harem displayed:\n\n"
             "📝 <b>Available options:</b>\n"
             "• <code>/sorts rarity</code> - Sort by rarity\n"
-            "• <code>/sorts name</code> - Sort by character name\n\n"
+            "• <code>/sorts name</code> - Sort by character name\n"
+            "• <code>/sorts limited_time</code> - Show limited time cards first\n\n"
             "💡 Your current sorting will be remembered for future /harem displays!",
             parse_mode='HTML'
         )
@@ -31,12 +32,13 @@ async def sorts(update: Update, context: CallbackContext) -> None:
     
     sort_type = args[0].lower()
     
-    if sort_type not in ['rarity', 'name']:
+    if sort_type not in ['rarity', 'name', 'limited_time']:
         await update.message.reply_text(
             "❌ Invalid sort type!\n\n"
             "Available options:\n"
             "• <code>/sorts rarity</code>\n"
-            "• <code>/sorts name</code>",
+            "• <code>/sorts name</code>\n"
+            "• <code>/sorts limited_time</code>",
             parse_mode='HTML'
         )
         return
@@ -79,6 +81,14 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
     elif sort_preference == 'name':
         # Sort by character name alphabetically
         characters = sorted(user['characters'], key=lambda x: x['name'])
+    elif sort_preference == 'limited_time':
+        # Sort by limited time cards first, then by rarity, then by name
+        rarity_order = ["Limited Edition", "Arcane", "Celestial", "Mythic", "Legendary", "Epic", "Rare", "Uncommon", "Common"]
+        characters = sorted(user['characters'], key=lambda x: (
+            0 if x.get('rarity') == 'Limited Edition' else 1,  # Limited Edition first
+            rarity_order.index(x.get('rarity', 'Common')),
+            x['name']
+        ))
     else:
         # Default: sort by anime then ID (existing behavior)
         characters = sorted(user['characters'], key=lambda x: (x['anime'], x['id']))
@@ -107,16 +117,28 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
         harem_message += f'\n<b>{anime} {len(characters)}/{await collection.count_documents({"anime": anime})}</b>\n'
 
         for character in characters:
-            
+            # Add rarity emoji to make it more beautiful
+            rarity_emojis = {
+                "Common": "⚪️",
+                "Uncommon": "🟢",
+                "Rare": "🔵",
+                "Epic": "🟣",
+                "Legendary": "🟡",
+                "Mythic": "🟥",
+                "Celestial": "🌌",
+                "Arcane": "🔥",
+                "Limited Edition": "💎"
+            }
+            rarity_emoji = rarity_emojis.get(character.get('rarity', 'Common'), "✨")
             count = character_counts[character['id']]  
-            harem_message += f'{character["id"]} {character["name"]} ×{count}\n'
+            harem_message += f'{rarity_emoji} {character["id"]} {character["name"]} ×{count}\n'
 
 
     total_count = len(user['characters'])
     
     keyboard = [
         [InlineKeyboardButton(f"See Collection ({total_count})", switch_inline_query_current_chat=f"collection.{user_id}")],
-        [InlineKeyboardButton(f"📊 Database", url=f"https://t.me/waifuscollectorbot?start={user_id}")]
+        [InlineKeyboardButton(f"📊 Database", url=f"https://t.me/c/{str(CHARA_CHANNEL_ID).replace('-100', '')}")]
     ]
 
 

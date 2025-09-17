@@ -289,8 +289,11 @@ async def summon(update: Update, context: CallbackContext) -> None:
         chat_id = update.effective_chat.id
         
         # Store character for marry command to find it
-        from shivu.__main__ import last_characters, first_correct_guesses
+        from shivu.__main__ import last_characters, first_correct_guesses, manually_summoned
         last_characters[chat_id] = character
+        
+        # Mark as manually summoned to allow multiple marriages
+        manually_summoned[chat_id] = True
         
         # Clear any existing guesses for this chat
         if chat_id in first_correct_guesses:

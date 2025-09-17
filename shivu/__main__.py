@@ -20,6 +20,7 @@ last_characters = {}
 sent_characters = {}
 first_correct_guesses = {}
 message_counts = {}
+manually_summoned = {}  # Track manually summoned characters to allow multiple marriages
 
 
 for module_name in ALL_MODULES:
@@ -76,6 +77,10 @@ async def send_image(update: Update, context: CallbackContext) -> None:
 
     if chat_id in first_correct_guesses:
         del first_correct_guesses[chat_id]
+    
+    # Clear manually summoned flag for automatic spawns
+    if chat_id in manually_summoned:
+        del manually_summoned[chat_id]
 
     # Rarity emoji mapping
     rarity_emojis = {
@@ -116,7 +121,9 @@ async def guess(update: Update, context: CallbackContext) -> None:
         await update.message.reply_text('🚫 No character has been summoned yet!\n\nCharacters appear automatically every 100 messages, or admins can use /summon to spawn one manually.')
         return
 
-    if chat_id in first_correct_guesses:
+    # Only prevent multiple guesses for automatically spawned characters
+    # Allow multiple marriages for manually summoned characters
+    if chat_id in first_correct_guesses and chat_id not in manually_summoned:
         await update.message.reply_text(f'❌️ Already Guessed By Someone.. Try Next Time Bruhh ')
         return
 
@@ -156,9 +163,9 @@ async def guess(update: Update, context: CallbackContext) -> None:
         return False
 
     if smart_name_match(guess, name_parts):
-
-    
-        first_correct_guesses[chat_id] = user_id
+        # For manually summoned characters, don't prevent multiple marriages
+        if chat_id not in manually_summoned:
+            first_correct_guesses[chat_id] = user_id
         
         user = await user_collection.find_one({'id': user_id})
         if user:
