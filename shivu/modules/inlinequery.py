@@ -20,7 +20,10 @@ rarity_emojis = {
     "Mythic": "🏵",
     "Retro": "🍥",
     "Zenith": "🪩",
-    "Limited Edition": "🍬"
+    "Limited Edition": "🍬",
+    # Temporary fallback for old rarities until migration
+    "Celestial": "🍥",  # Maps to Retro emoji  
+    "Arcane": "🪩"     # Maps to Zenith emoji
 }
 
 

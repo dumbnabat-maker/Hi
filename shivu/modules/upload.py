@@ -19,7 +19,10 @@ rarity_styles = {
     "Mythic": "🏵",
     "Retro": "🍥",
     "Zenith": "🪩",
-    "Limited Edition": "🍬"
+    "Limited Edition": "🍬",
+    # Temporary fallback for old rarities until migration
+    "Celestial": "🍥",  # Maps to Retro emoji
+    "Arcane": "🪩"     # Maps to Zenith emoji
 }
 
 WRONG_FORMAT_TEXT = """Wrong ❌️ format...  eg. /upload Img_url muzan-kibutsuji Demon-slayer 5
