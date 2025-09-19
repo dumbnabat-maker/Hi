@@ -33,10 +33,10 @@ Use rarity number accordingly:
 3 = 🔵 Rare
 4 = 🟣 Epic
 5 = 🟡 Legendary
-6 = 🟥 Mythic
-7 = 🌌 Celestial
-8 = 🔥 Arcane
-9 = 💎 Limited Edition
+6 = 🏵 Mythic
+7 = 🍥 Retro
+8 = 🪩 Zenith
+9 = 🍬 Limited Edition
 
 ✅ Supported: Discord CDN links, direct image URLs, and other standard image hosting services"""
 
@@ -249,7 +249,7 @@ async def summon(update: Update, context: CallbackContext) -> None:
             "Legendary": 2,
             "Mythic": 0.8,
             "Retro": 0.3,
-            "Zenith": 0.05,
+            "Zenith": 0,
             "Limited Edition": 0
         }
         
@@ -413,14 +413,14 @@ async def update(update: Update, context: CallbackContext) -> None:
                 4: "Epic", 
                 5: "Legendary", 
                 6: "Mythic", 
-                7: "Celestial", 
-                8: "Arcane", 
+                7: "Retro", 
+                8: "Zenith", 
                 9: "Limited Edition"
             }
             try:
                 new_value = rarity_map[int(args[2])]
             except KeyError:
-                await update.message.reply_text('Invalid rarity. Please use 1-9:\n1=Common, 2=Uncommon, 3=Rare, 4=Epic, 5=Legendary, 6=Mythic, 7=Celestial, 8=Arcane, 9=Limited Edition')
+                await update.message.reply_text('Invalid rarity. Please use 1-9:\n1=Common, 2=Uncommon, 3=Rare, 4=Epic, 5=Legendary, 6=Mythic, 7=Retro, 8=Zenith, 9=Limited Edition')
                 return
         else:
             new_value = args[2]

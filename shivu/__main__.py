@@ -62,10 +62,15 @@ async def message_counter(update: Update, context: CallbackContext) -> None:
 async def send_image(update: Update, context: CallbackContext) -> None:
     chat_id = update.effective_chat.id
 
-    # Only get spawnable characters (exclude Limited Edition)
+    # Only get spawnable characters (exclude Limited Edition and Zenith)
     all_characters = list(await collection.find({
-        'rarity': {'$ne': 'Limited Edition'}
+        'rarity': {'$nin': ['Limited Edition', 'Zenith']}
     }).to_list(length=None))
+    
+    # Check if there are any spawnable characters
+    if not all_characters:
+        LOGGER.warning("No spawnable characters available - all are Limited Edition or Zenith")
+        return
     
     if chat_id not in sent_characters:
         sent_characters[chat_id] = []
@@ -73,7 +78,13 @@ async def send_image(update: Update, context: CallbackContext) -> None:
     if len(sent_characters[chat_id]) == len(all_characters):
         sent_characters[chat_id] = []
 
-    character = random.choice([c for c in all_characters if c['id'] not in sent_characters[chat_id]])
+    available_characters = [c for c in all_characters if c['id'] not in sent_characters[chat_id]]
+    if not available_characters:
+        # This shouldn't happen due to the reset above, but just in case
+        available_characters = all_characters
+        sent_characters[chat_id] = []
+    
+    character = random.choice(available_characters)
 
     sent_characters[chat_id].append(character['id'])
     last_characters[chat_id] = character
