@@ -10,3 +10,4 @@ tgcrypto
 python-dotenv
 cachetools
 pysqlite3-binary
+motor
