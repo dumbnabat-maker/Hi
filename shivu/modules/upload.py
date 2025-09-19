@@ -246,10 +246,10 @@ async def summon(update: Update, context: CallbackContext) -> None:
             "Uncommon": 20,
             "Rare": 20,
             "Epic": 20,
-            "Legendary": 10,
-            "Mythic": 5,
-            "Celestial": 0.5,
-            "Arcane": 0.0005,
+            "Legendary": 2,
+            "Mythic": 0.8,
+            "Celestial": 0.1,
+            "Arcane": 0.001,
             "Limited Edition": 0
         }
         
