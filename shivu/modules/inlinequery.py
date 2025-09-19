@@ -10,6 +10,19 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from shivu import user_collection, collection, application, db, LOGGER
 
+# Rarity emojis configuration (updated to match latest rarities)
+rarity_emojis = {
+    "Common": "⚪️",
+    "Uncommon": "🟢",
+    "Rare": "🔵",
+    "Epic": "🟣",
+    "Legendary": "🟡",
+    "Mythic": "🏵",
+    "Retro": "🍥",
+    "Zenith": "🪩",
+    "Limited Edition": "🍬"
+}
+
 
 # Database indexes will be created automatically by MongoDB when needed
 # Removed manual index creation to avoid async/await issues
@@ -102,21 +115,68 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
     results = []
     for character in characters:
         try:
-            # Optimized to reduce database queries for empty query (showing popular characters)
+            # Get rarity emoji for consistent display
+            rarity_emoji = rarity_emojis.get(character.get('rarity', 'Common'), "✨")
+            
+            # Get enhanced statistics
+            global_count = await user_collection.count_documents({'characters.id': character['id']})
+            
+            # Optimized display with proper rarity emojis and enhanced styling
             if query.startswith('collection.') and user:
-                # For user collections, show detailed stats
-                global_count = await user_collection.count_documents({'characters.id': character['id']})
+                # For user collections, show detailed stats with owner info
                 anime_characters = await collection.count_documents({'anime': character['anime']})
                 user_character_count = sum(c['id'] == character['id'] for c in user['characters'])
                 user_anime_characters = sum(c['anime'] == character['anime'] for c in user['characters'])
-                caption = f"<b> Look At <a href='tg://user?id={user['id']}'>{(escape(user.get('first_name', user['id'])))}</a>'s Character</b>\n\n🌸: <b>{character['name']} (x{user_character_count})</b>\n🏖️: <b>{character['anime']} ({user_anime_characters}/{anime_characters})</b>\n<b>{character['rarity']}</b>\n\n<b>🆔️:</b> {character['id']}"
+                
+                # Get top 5 users who have this character
+                top_users = await user_collection.find(
+                    {'characters.id': character['id']}, 
+                    {'first_name': 1, 'characters': 1}
+                ).limit(5).to_list(length=5)
+                user_list = ", ".join([f"{user.get('first_name', 'User')} (x{sum(1 for c in user.get('characters', []) if c['id'] == character['id'])})" for user in top_users])
+                
+                caption = (
+                    f"✨ <b><a href='tg://user?id={user['id']}'>{escape(user.get('first_name', 'User'))}</a>'s Collection</b> ✨\n"
+                    f"━━━━━━━━━━━━━━━━\n"
+                    f"🌸 <b>{character['name']}</b> <i>(x{user_character_count})</i>\n"
+                    f"🎌 <i>{character['anime']}</i> <code>({user_anime_characters}/{anime_characters})</code>\n"
+                    f"{rarity_emoji} <b>{character['rarity']}</b>\n"
+                    f"🆔 <code>#{character['id']}</code>\n"
+                    f"━━━━━━━━━━━━━━━━\n"
+                    f"📊 <b>Globally Caught:</b> {global_count} times\n"
+                    f"👥 <b>Top Owners:</b> {user_list if user_list else 'None'}\n"
+                    f"━━━━━━━━━━━━━━━━"
+                )
             elif query:
-                # For search queries, show detailed stats
-                global_count = await user_collection.count_documents({'characters.id': character['id']})
-                caption = f"<b>Look At This Character !!</b>\n\n🌸:<b> {character['name']}</b>\n🏖️: <b>{character['anime']}</b>\n<b>{character['rarity']}</b>\n🆔️: <b>{character['id']}</b>\n\n<b>Globally Guessed {global_count} Times...</b>"
+                # For search queries, show detailed global stats
+                # Get top 3 users who have this character for display
+                top_users = await user_collection.find(
+                    {'characters.id': character['id']}, 
+                    {'first_name': 1, 'characters': 1}
+                ).limit(3).to_list(length=3)
+                user_list = ", ".join([f"{user.get('first_name', 'User')} (x{sum(1 for c in user.get('characters', []) if c['id'] == character['id'])})" for user in top_users])
+                
+                caption = (
+                    f"🔍 <b>Character Database</b> 🔍\n"
+                    f"━━━━━━━━━━━━━━━━\n"
+                    f"🌸 <b>{character['name']}</b>\n"
+                    f"🎌 <i>{character['anime']}</i>\n"
+                    f"{rarity_emoji} <b>{character['rarity']}</b>\n"
+                    f"🆔 <code>#{character['id']}</code>\n"
+                    f"━━━━━━━━━━━━━━━━\n"
+                    f"📊 <b>Caught {global_count} times globally</b>\n"
+                    f"👥 <b>Recent Owners:</b> {user_list if user_list else 'None'}\n"
+                    f"━━━━━━━━━━━━━━━━"
+                )
             else:
-                # For empty query (like Yandex), show simplified info for better performance
-                caption = f"<b>{character['name']}</b>\n🏖️: <b>{character['anime']}</b>\n✨ <b>{character['rarity']}</b>\n🆔️: <b>{character['id']}</b>"
+                # For empty query, show simplified but styled info
+                caption = (
+                    f"🌟 <b>{character['name']}</b> 🌟\n"
+                    f"🎌 <i>{character['anime']}</i>\n"
+                    f"{rarity_emoji} <b>{character['rarity']}</b>\n"
+                    f"🆔 <code>#{character['id']}</code>\n"
+                    f"📊 <i>Caught {global_count} times</i>"
+                )
             
             # Process image URL for compatibility (handles JFIF and other formats)
             from shivu import process_image_url
