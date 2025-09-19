@@ -76,14 +76,14 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
     
     if sort_preference == 'rarity':
         # Sort by rarity (rarest first) then by name
-        rarity_order = ["Limited Edition", "Arcane", "Celestial", "Mythic", "Legendary", "Epic", "Rare", "Uncommon", "Common"]
+        rarity_order = ["Limited Edition", "Zenith", "Retro", "Mythic", "Legendary", "Epic", "Rare", "Uncommon", "Common"]
         characters = sorted(user['characters'], key=lambda x: (rarity_order.index(x.get('rarity', 'Common')), x['name']))
     elif sort_preference == 'name':
         # Sort by character name alphabetically
         characters = sorted(user['characters'], key=lambda x: x['name'])
     elif sort_preference == 'limited_time':
         # Sort by limited time cards first, then by rarity, then by name
-        rarity_order = ["Limited Edition", "Arcane", "Celestial", "Mythic", "Legendary", "Epic", "Rare", "Uncommon", "Common"]
+        rarity_order = ["Limited Edition", "Zenith", "Retro", "Mythic", "Legendary", "Epic", "Rare", "Uncommon", "Common"]
         characters = sorted(user['characters'], key=lambda x: (
             0 if x.get('rarity') == 'Limited Edition' else 1,  # Limited Edition first
             rarity_order.index(x.get('rarity', 'Common')),
@@ -124,10 +124,10 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
                 "Rare": "🔵",
                 "Epic": "🟣",
                 "Legendary": "🟡",
-                "Mythic": "🟥",
-                "Celestial": "🌌",
-                "Arcane": "🔥",
-                "Limited Edition": "💎"
+                "Mythic": "🏵",
+                "Retro": "🍥",
+                "Zenith": "🪩",
+                "Limited Edition": "🍬"
             }
             rarity_emoji = rarity_emojis.get(character.get('rarity', 'Common'), "✨")
             count = character_counts[character['id']]  

@@ -62,9 +62,9 @@ async def message_counter(update: Update, context: CallbackContext) -> None:
 async def send_image(update: Update, context: CallbackContext) -> None:
     chat_id = update.effective_chat.id
 
-    # Only get spawnable characters (exclude Limited Edition and Arcane)
+    # Only get spawnable characters (exclude Limited Edition)
     all_characters = list(await collection.find({
-        'rarity': {'$nin': ['Limited Edition', 'Arcane']}
+        'rarity': {'$ne': 'Limited Edition'}
     }).to_list(length=None))
     
     if chat_id not in sent_characters:
@@ -92,10 +92,10 @@ async def send_image(update: Update, context: CallbackContext) -> None:
         "Rare": "🔵",
         "Epic": "🟣",
         "Legendary": "🟡",
-        "Mythic": "🟥",
-        "Celestial": "🌌",
-        "Arcane": "🔥",
-        "Limited Edition": "💎"
+        "Mythic": "🏵",
+        "Retro": "🍥",
+        "Zenith": "🪩",
+        "Limited Edition": "🍬"
     }
     
     rarity_emoji = rarity_emojis.get(character['rarity'], "✨")

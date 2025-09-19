@@ -16,10 +16,10 @@ rarity_styles = {
     "Rare": "🔵",
     "Epic": "🟣",
     "Legendary": "🟡",
-    "Mythic": "🟥",
-    "Celestial": "🌌",
-    "Arcane": "🔥",
-    "Limited Edition": "💎"
+    "Mythic": "🏵",
+    "Retro": "🍥",
+    "Zenith": "🪩",
+    "Limited Edition": "🍬"
 }
 
 WRONG_FORMAT_TEXT = """Wrong ❌️ format...  eg. /upload Img_url muzan-kibutsuji Demon-slayer 5
@@ -146,14 +146,14 @@ async def upload(update: Update, context: CallbackContext) -> None:
             4: "Epic", 
             5: "Legendary", 
             6: "Mythic", 
-            7: "Celestial", 
-            8: "Arcane", 
+            7: "Retro", 
+            8: "Zenith", 
             9: "Limited Edition"
         }
         try:
             rarity = rarity_map[int(args[3])]
         except KeyError:
-            await update.message.reply_text('Invalid rarity. Please use 1-9:\n1=Common, 2=Uncommon, 3=Rare, 4=Epic, 5=Legendary, 6=Mythic, 7=Celestial, 8=Arcane, 9=Limited Edition')
+            await update.message.reply_text('Invalid rarity. Please use 1-9:\n1=Common, 2=Uncommon, 3=Rare, 4=Epic, 5=Legendary, 6=Mythic, 7=Retro, 8=Zenith, 9=Limited Edition')
             return
 
         id = str(await get_next_sequence_number('character_id'))
@@ -248,13 +248,13 @@ async def summon(update: Update, context: CallbackContext) -> None:
             "Epic": 20,
             "Legendary": 2,
             "Mythic": 0.8,
-            "Celestial": 0.1,
-            "Arcane": 0,
+            "Retro": 0.3,
+            "Zenith": 0.05,
             "Limited Edition": 0
         }
         
-        # Get available rarities from database (excluding Limited Edition and Arcane)
-        available_rarities = await collection.distinct('rarity', {'rarity': {'$nin': ['Limited Edition', 'Arcane']}})
+        # Get available rarities from database (excluding Limited Edition)
+        available_rarities = await collection.distinct('rarity', {'rarity': {'$ne': 'Limited Edition'}})
         
         if not available_rarities:
             await update.message.reply_text('❌ No spawnable characters available!\n\nAll characters in the database appear to be Limited Edition or non-spawnable. Please upload some common characters using /upload.')
