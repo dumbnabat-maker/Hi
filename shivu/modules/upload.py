@@ -473,6 +473,72 @@ async def update(update: Update, context: CallbackContext) -> None:
     except Exception as e:
         await update.message.reply_text(f'I guess did not added bot in channel.. or character uploaded Long time ago.. Or character not exits.. orr Wrong id')
 
+
+async def migrate_rarities(update: Update, context: CallbackContext) -> None:
+    """Migrate old rarity names to new ones in the database - Admin only"""
+    if not update.effective_user or not update.message:
+        return
+        
+    if str(update.effective_user.id) not in sudo_users:
+        await update.message.reply_text('You do not have permission to use this command.')
+        return
+
+    try:
+        await update.message.reply_text('🔄 Starting rarity migration...\n\nUpdating database to change:\n• Celestial → Retro\n• Arcane → Zenith')
+        
+        # Update main character collection
+        result_celestial = await collection.update_many(
+            {'rarity': 'Celestial'},
+            {'$set': {'rarity': 'Retro'}}
+        )
+        
+        result_arcane = await collection.update_many(
+            {'rarity': 'Arcane'}, 
+            {'$set': {'rarity': 'Zenith'}}
+        )
+        
+        # Update user collections
+        from shivu import user_collection
+        
+        user_result_celestial = await user_collection.update_many(
+            {'characters.rarity': 'Celestial'},
+            {'$set': {'characters.$[elem].rarity': 'Retro'}},
+            array_filters=[{'elem.rarity': 'Celestial'}]
+        )
+        
+        user_result_arcane = await user_collection.update_many(
+            {'characters.rarity': 'Arcane'},
+            {'$set': {'characters.$[elem].rarity': 'Zenith'}},
+            array_filters=[{'elem.rarity': 'Arcane'}]
+        )
+        
+        # Verify changes
+        celestial_count = await collection.count_documents({'rarity': 'Celestial'})
+        arcane_count = await collection.count_documents({'rarity': 'Arcane'})
+        retro_count = await collection.count_documents({'rarity': 'Retro'})
+        zenith_count = await collection.count_documents({'rarity': 'Zenith'})
+        
+        success_message = (
+            f'✅ <b>Migration Completed!</b>\n\n'
+            f'📊 <b>Characters updated:</b>\n'
+            f'• Celestial → Retro: {result_celestial.modified_count}\n'
+            f'• Arcane → Zenith: {result_arcane.modified_count}\n\n'
+            f'👥 <b>User collections updated:</b>\n'
+            f'• Celestial → Retro: {user_result_celestial.modified_count} users\n'
+            f'• Arcane → Zenith: {user_result_arcane.modified_count} users\n\n'
+            f'🔍 <b>Current counts:</b>\n'
+            f'• Retro: {retro_count}\n'
+            f'• Zenith: {zenith_count}\n'
+            f'• Old Celestial remaining: {celestial_count}\n'
+            f'• Old Arcane remaining: {arcane_count}'
+        )
+        
+        await update.message.reply_text(success_message, parse_mode='HTML')
+        
+    except Exception as e:
+        await update.message.reply_text(f'❌ Error during migration: {str(e)}')
+
+
 UPLOAD_HANDLER = CommandHandler('upload', upload, block=False)
 application.add_handler(UPLOAD_HANDLER)
 DELETE_HANDLER = CommandHandler('delete', delete, block=False)
@@ -483,3 +549,5 @@ FIND_HANDLER = CommandHandler('find', find, block=False)
 application.add_handler(FIND_HANDLER)
 UPDATE_HANDLER = CommandHandler('update', update, block=False)
 application.add_handler(UPDATE_HANDLER)
+MIGRATE_HANDLER = CommandHandler('migrate_rarities', migrate_rarities, block=False)
+application.add_handler(MIGRATE_HANDLER)
