@@ -249,12 +249,12 @@ async def summon(update: Update, context: CallbackContext) -> None:
             "Legendary": 2,
             "Mythic": 0.8,
             "Celestial": 0.1,
-            "Arcane": 0.001,
+            "Arcane": 0,
             "Limited Edition": 0
         }
         
-        # Get available rarities from database (excluding Limited Edition)
-        available_rarities = await collection.distinct('rarity', {'rarity': {'$ne': 'Limited Edition'}})
+        # Get available rarities from database (excluding Limited Edition and Arcane)
+        available_rarities = await collection.distinct('rarity', {'rarity': {'$nin': ['Limited Edition', 'Arcane']}})
         
         if not available_rarities:
             await update.message.reply_text('❌ No spawnable characters available!\n\nAll characters in the database appear to be Limited Edition or non-spawnable. Please upload some common characters using /upload.')
