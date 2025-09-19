@@ -9,4 +9,3 @@ pyrogram
 tgcrypto
 python-dotenv
 cachetools
-telegram

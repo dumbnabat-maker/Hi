@@ -5,7 +5,6 @@ from telegram.ext import Application
 from motor.motor_asyncio import AsyncIOMotorClient
 import requests
 import tempfile
-from PIL import Image
 import io
 
 logging.basicConfig(
