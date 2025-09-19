@@ -427,7 +427,15 @@ async def update(update: Update, context: CallbackContext) -> None:
 
         await collection.find_one_and_update({'id': args[0]}, {'$set': {args[1]: new_value}})
 
-        
+        # Update user collections when character properties change
+        from shivu import user_collection
+        if args[1] in ['name', 'anime', 'rarity']:
+            await user_collection.update_many(
+                {'characters.id': args[0]},
+                {'$set': {f'characters.$[elem].{args[1]}': new_value}},
+                array_filters=[{'elem.id': args[0]}]
+            )
+
         if args[1] == 'img_url':
             await context.bot.delete_message(chat_id=CHARA_CHANNEL_ID, message_id=character['message_id'])
             rarity_emoji = rarity_styles.get(character["rarity"], "")
@@ -448,10 +456,12 @@ async def update(update: Update, context: CallbackContext) -> None:
             character['message_id'] = message.message_id
             await collection.find_one_and_update({'id': args[0]}, {'$set': {'message_id': message.message_id}})
         else:
+            # Update character dict with new value for accurate caption
+            character[args[1]] = new_value
             
             rarity_emoji = rarity_styles.get(character["rarity"], "")
             
-            # Create updated beautiful caption
+            # Create updated beautiful caption with fresh values
             updated_caption = (
                 f"✨ <b>{character['name']}</b> ✨\n"
                 f"🎌 <i>{character['anime']}</i>\n"
@@ -549,5 +559,7 @@ FIND_HANDLER = CommandHandler('find', find, block=False)
 application.add_handler(FIND_HANDLER)
 UPDATE_HANDLER = CommandHandler('update', update, block=False)
 application.add_handler(UPDATE_HANDLER)
+EDIT_HANDLER = CommandHandler('edit', update, block=False)
+application.add_handler(EDIT_HANDLER)
 MIGRATE_HANDLER = CommandHandler('migrate_rarities', migrate_rarities, block=False)
 application.add_handler(MIGRATE_HANDLER)
