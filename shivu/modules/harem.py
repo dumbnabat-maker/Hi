@@ -141,12 +141,8 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
             rarity_emoji = rarity_emojis.get(character.get('rarity', 'Common'), "✨")
             count = character_counts[character['id']]
             
-            # Random emojis for variety (like the examples showed [🏖], [👘], etc.)
-            variety_emojis = ['🏖', '👘', '🎒', '🏀', '☃️', '🎮', '🌸', '🎭', '🎨', '🎪']
-            variety_emoji = random.choice(variety_emojis)
-            
             # Stylish character entry format
-            harem_message += f'➥ {character["id"]}〔{rarity_emoji} 〕{character["name"]} [{variety_emoji}] x{count}\n'
+            harem_message += f'➥ {character["id"]}〔{rarity_emoji} 〕{character["name"]} x{count}\n'
 
         # Add separator after each anime section
         harem_message += '⚋⚋⚋⚋⚋⚋⚋⚋⚋⚋⚋⚋⚋⚋⚋\n'
