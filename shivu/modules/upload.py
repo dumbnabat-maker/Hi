@@ -215,9 +215,15 @@ async def delete(update: Update, context: CallbackContext) -> None:
         character = await collection.find_one_and_delete({'id': args[0]})
 
         if character:
+            # Also remove from all user collections
+            from shivu import user_collection
+            user_result = await user_collection.update_many(
+                {'characters.id': args[0]},
+                {'$pull': {'characters': {'id': args[0]}}}
+            )
             
             await context.bot.delete_message(chat_id=CHARA_CHANNEL_ID, message_id=character['message_id'])
-            await update.message.reply_text('DONE')
+            await update.message.reply_text(f'✅ Character deleted from database and removed from {user_result.modified_count} user collections.')
         else:
             await update.message.reply_text('Deleted Successfully from db, but character not found In Channel')
     except Exception as e:
@@ -326,6 +332,72 @@ async def summon(update: Update, context: CallbackContext) -> None:
         
     except Exception as e:
         await update.message.reply_text(f'❌ Error summoning character: {str(e)}')
+
+
+async def remove_character_from_user(update: Update, context: CallbackContext) -> None:
+    """Remove a specific character from a user's harem - Admin only"""
+    if not update.effective_user or not update.message:
+        return
+        
+    if str(update.effective_user.id) not in sudo_users:
+        await update.message.reply_text('Ask My Owner to use this Command...')
+        return
+
+    try:
+        args = context.args
+        if not args or len(args) != 2:
+            await update.message.reply_text('❌ Incorrect format!\n\nUsage: /remove <character_id> <user_id>\nExample: /remove 123 987654321')
+            return
+
+        character_id = args[0]
+        user_id_str = args[1]
+        
+        try:
+            user_id = int(user_id_str)
+        except ValueError:
+            await update.message.reply_text('❌ Invalid user ID format!')
+            return
+
+        # Find the character first to show details
+        character = await collection.find_one({'id': character_id})
+        if not character:
+            await update.message.reply_text(f'❌ Character with ID #{character_id} not found in database!')
+            return
+
+        # Find the user
+        from shivu import user_collection
+        user = await user_collection.find_one({'id': user_id})
+        if not user:
+            await update.message.reply_text(f'❌ User with ID {user_id} not found!')
+            return
+
+        # Check if user has this character
+        user_character_count = sum(1 for c in user.get('characters', []) if c.get('id') == character_id)
+        if user_character_count == 0:
+            await update.message.reply_text(f'❌ User does not have character #{character_id} ({character["name"]}) in their harem!')
+            return
+
+        # Remove one instance of the character
+        result = await user_collection.update_one(
+            {'id': user_id},
+            {'$pull': {'characters': {'id': character_id}}}
+        )
+
+        if result.modified_count > 0:
+            remaining_count = user_character_count - 1
+            user_name = user.get('first_name', 'User')
+            await update.message.reply_text(
+                f'✅ <b>Character Removed!</b>\n\n'
+                f'🗑️ Removed: {character["name"]} (#{character_id})\n'
+                f'👤 From: <a href="tg://user?id={user_id}">{user_name}</a>\n'
+                f'📊 Remaining: {remaining_count} copies',
+                parse_mode='HTML'
+            )
+        else:
+            await update.message.reply_text('❌ Failed to remove character from user harem!')
+            
+    except Exception as e:
+        await update.message.reply_text(f'❌ Error removing character: {str(e)}')
 
 
 async def find(update: Update, context: CallbackContext) -> None:
@@ -561,5 +633,7 @@ UPDATE_HANDLER = CommandHandler('update', update, block=False)
 application.add_handler(UPDATE_HANDLER)
 EDIT_HANDLER = CommandHandler('edit', update, block=False)
 application.add_handler(EDIT_HANDLER)
+REMOVE_HANDLER = CommandHandler('remove', remove_character_from_user, block=False)
+application.add_handler(REMOVE_HANDLER)
 MIGRATE_HANDLER = CommandHandler('migrate_rarities', migrate_rarities, block=False)
 application.add_handler(MIGRATE_HANDLER)

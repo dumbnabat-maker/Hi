@@ -1,5 +1,6 @@
 from telegram import Update
 from itertools import groupby
+from collections import Counter, defaultdict
 import math
 from html import escape 
 import random
@@ -93,7 +94,8 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
         # Default: sort by anime then ID (existing behavior)
         characters = sorted(user['characters'], key=lambda x: (x['anime'], x['id']))
 
-    character_counts = {k: len(list(v)) for k, v in groupby(characters, key=lambda x: x['id'])}
+    # Use Counter to properly count character occurrences regardless of sort order
+    character_counts = Counter(character['id'] for character in user['characters'])
 
     
     unique_characters = list({character['id']: character for character in characters}.values())
@@ -110,11 +112,18 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
     
     current_characters = unique_characters[page*15:(page+1)*15]
 
-    
-    current_grouped_characters = {k: list(v) for k, v in groupby(current_characters, key=lambda x: x['anime'])}
+    # Group characters by anime properly regardless of sort order
+    current_grouped_characters = defaultdict(list)
+    for character in current_characters:
+        current_grouped_characters[character['anime']].append(character)
 
     for anime, characters in current_grouped_characters.items():
-        harem_message += f'\n<b>{anime} {len(characters)}/{await collection.count_documents({"anime": anime})}</b>\n'
+        # Get total count of anime characters in database
+        anime_total = await collection.count_documents({"anime": anime})
+        
+        # Stylish anime header with count
+        harem_message += f'\n✢ {anime} 「 {len(characters)}/{anime_total} 」\n'
+        harem_message += '⚋⚋⚋⚋⚋⚋⚋⚋⚋⚋⚋⚋⚋⚋⚋\n'
 
         for character in characters:
             # Add rarity emoji to make it more beautiful
@@ -130,8 +139,17 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
                 "Limited Edition": "🍬"
             }
             rarity_emoji = rarity_emojis.get(character.get('rarity', 'Common'), "✨")
-            count = character_counts[character['id']]  
-            harem_message += f'{rarity_emoji} {character["id"]} {character["name"]} ×{count}\n'
+            count = character_counts[character['id']]
+            
+            # Random emojis for variety (like the examples showed [🏖], [👘], etc.)
+            variety_emojis = ['🏖', '👘', '🎒', '🏀', '☃️', '🎮', '🌸', '🎭', '🎨', '🎪']
+            variety_emoji = random.choice(variety_emojis)
+            
+            # Stylish character entry format
+            harem_message += f'➥ {character["id"]}〔{rarity_emoji} 〕{character["name"]} [{variety_emoji}] x{count}\n'
+
+        # Add separator after each anime section
+        harem_message += '⚋⚋⚋⚋⚋⚋⚋⚋⚋⚋⚋⚋⚋⚋⚋\n'
 
 
     total_count = len(user['characters'])

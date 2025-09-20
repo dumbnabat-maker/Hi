@@ -1,12 +1,7 @@
 import importlib
-import time
 import random
-import re
 import asyncio
-from html import escape 
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram import Update
 from telegram.ext import CommandHandler, CallbackContext, MessageHandler, filters
 
@@ -20,6 +15,7 @@ last_characters = {}
 sent_characters = {}
 first_correct_guesses = {}
 message_counts = {}
+retro_message_counts = {}  # Track messages for Retro spawns (every 1k messages)
 manually_summoned = {}  # Track manually summoned characters to allow multiple marriages
 
 
@@ -27,13 +23,10 @@ for module_name in ALL_MODULES:
     imported_module = importlib.import_module("shivu.modules." + module_name)
 
 
-def escape_markdown(text):
-    escape_chars = r'\*_`\\~>#+-=|{}.!'
-    return re.sub(r'([%s])' % re.escape(escape_chars), r'\\\1', text)
 
 
 async def message_counter(update: Update, context: CallbackContext) -> None:
-    chat_id = str(update.effective_chat.id)
+    chat_id = update.effective_chat.id
 
     if chat_id not in locks:
         locks[chat_id] = asyncio.Lock()
@@ -41,7 +34,7 @@ async def message_counter(update: Update, context: CallbackContext) -> None:
 
     async with lock:
         
-        chat_frequency = await user_totals_collection.find_one({'chat_id': chat_id})
+        chat_frequency = await user_totals_collection.find_one({'chat_id': str(chat_id)})
         if chat_frequency:
             message_frequency = chat_frequency.get('message_frequency', 100)
         else:
@@ -58,13 +51,23 @@ async def message_counter(update: Update, context: CallbackContext) -> None:
             await send_image(update, context)
             
             message_counts[chat_id] = 0
+        
+        # Check for Retro spawn (every 1000 messages)
+        if chat_id in retro_message_counts:
+            retro_message_counts[chat_id] += 1
+        else:
+            retro_message_counts[chat_id] = 1
+            
+        if retro_message_counts[chat_id] % 1000 == 0:
+            await send_retro_character(update, context)
+            retro_message_counts[chat_id] = 0
             
 async def send_image(update: Update, context: CallbackContext) -> None:
     chat_id = update.effective_chat.id
 
-    # Only get spawnable characters (exclude Limited Edition and Zenith)
+    # Only get spawnable characters (exclude Limited Edition, Zenith, and Retro)
     all_characters = list(await collection.find({
-        'rarity': {'$nin': ['Limited Edition', 'Zenith']}
+        'rarity': {'$nin': ['Limited Edition', 'Zenith', 'Retro']}
     }).to_list(length=None))
     
     # Check if there are any spawnable characters
@@ -124,6 +127,60 @@ async def send_image(update: Update, context: CallbackContext) -> None:
         await context.bot.send_message(
             chat_id=chat_id,
             text=f"{rarity_emoji} A beauty has been summoned! Use /marry to add them to your harem!\n\n⚠️ Image could not be loaded",
+            parse_mode='Markdown')
+
+
+async def send_retro_character(update: Update, context: CallbackContext) -> None:
+    """Send a Retro character every 1000 messages"""
+    chat_id = update.effective_chat.id
+    
+    # Get only Retro characters
+    retro_characters = list(await collection.find({
+        'rarity': 'Retro'
+    }).to_list(length=None))
+    
+    if not retro_characters:
+        LOGGER.warning("No Retro characters available to spawn")
+        return
+    
+    # Track sent Retro characters separately to avoid repeats
+    retro_sent_key = f"{chat_id}_retro"
+    
+    if retro_sent_key not in sent_characters:
+        sent_characters[retro_sent_key] = []
+
+    if len(sent_characters[retro_sent_key]) == len(retro_characters):
+        sent_characters[retro_sent_key] = []
+
+    available_retro = [c for c in retro_characters if c['id'] not in sent_characters[retro_sent_key]]
+    if not available_retro:
+        available_retro = retro_characters
+        sent_characters[retro_sent_key] = []
+    
+    character = random.choice(available_retro)
+    sent_characters[retro_sent_key].append(character['id'])
+    last_characters[chat_id] = character
+
+    if chat_id in first_correct_guesses:
+        del first_correct_guesses[chat_id]
+    
+    # Clear manually summoned flag for automatic spawns
+    if chat_id in manually_summoned:
+        del manually_summoned[chat_id]
+
+    try:
+        from shivu import process_image_url
+        processed_url = await process_image_url(character['img_url'])
+        await context.bot.send_photo(
+            chat_id=chat_id,
+            photo=processed_url,
+            caption=f"🍥 A rare RETRO beauty has appeared! Use /marry to add them to your harem!",
+            parse_mode='Markdown')
+    except Exception as e:
+        LOGGER.error(f"Error sending retro character image: {str(e)}")
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"🍥 A rare RETRO beauty has appeared! Use /marry to add them to your harem!\n\n⚠️ Image could not be loaded",
             parse_mode='Markdown')
 
 
