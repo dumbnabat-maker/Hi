@@ -378,9 +378,16 @@ async def remove_character_from_user(update: Update, context: CallbackContext) -
             return
 
         # Remove one instance of the character
+        # Remove only one instance of the character (two-step process)
+        # First, unset the first matching character to null
+        await user_collection.update_one(
+            {'id': user_id, 'characters.id': character_id},
+            {'$unset': {'characters.$': 1}}
+        )
+        # Then pull the null values
         result = await user_collection.update_one(
             {'id': user_id},
-            {'$pull': {'characters': {'id': character_id}}}
+            {'$pull': {'characters': None}}
         )
 
         if result.modified_count > 0:
