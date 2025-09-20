@@ -17,7 +17,7 @@ async def start(update: Update, context: CallbackContext) -> None:
 
     if user_data is None:
         
-        await collection.insert_one({"_id": user_id, "first_name": first_name, "username": username})
+        await collection.insert_one({"_id": user_id, "first_name": first_name, "username": username, "characters": []})
         
         # Optional: Send notification to group when new users start (uncomment if you have a group set up)
         # await context.bot.send_message(chat_id=GROUP_ID, 

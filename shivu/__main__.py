@@ -2,8 +2,9 @@ import importlib
 import random
 import asyncio
 
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CommandHandler, CallbackContext, MessageHandler, filters
+from html import escape
 
 from shivu import collection, top_global_groups_collection, group_user_totals_collection, user_collection, user_totals_collection, shivuu
 from shivu import application, SUPPORT_CHAT, UPDATE_CHAT, db, LOGGER
@@ -245,6 +246,11 @@ async def guess(update: Update, context: CallbackContext) -> None:
                 update_fields['username'] = update.effective_user.username
             if update.effective_user.first_name != user.get('first_name'):
                 update_fields['first_name'] = update.effective_user.first_name
+            
+            # Ensure characters field exists as a list
+            if 'characters' not in user or user['characters'] is None:
+                update_fields['characters'] = []
+                
             if update_fields:
                 await user_collection.update_one({'id': user_id}, {'$set': update_fields})
             

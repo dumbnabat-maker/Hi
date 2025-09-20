@@ -30,6 +30,15 @@ async def trade(client, message):
     sender = await user_collection.find_one({'id': sender_id})
     receiver = await user_collection.find_one({'id': receiver_id})
 
+    # Check if users exist and have characters field
+    if not sender or not sender.get('characters'):
+        await message.reply_text("You don't have any characters to trade!")
+        return
+        
+    if not receiver or not receiver.get('characters'):
+        await message.reply_text("The other user doesn't have any characters to trade!")
+        return
+
     sender_character = next((character for character in sender['characters'] if character['id'] == sender_character_id), None)
     receiver_character = next((character for character in receiver['characters'] if character['id'] == receiver_character_id), None)
 
@@ -67,7 +76,7 @@ async def trade(client, message):
 
 
 @shivuu.on_callback_query(filters.create(lambda _, __, query: query.data in ["confirm_trade", "cancel_trade"]))
-async def on_callback_query(client, callback_query):
+async def on_trade_callback_query(client, callback_query):
     receiver_id = callback_query.from_user.id
 
     
@@ -83,10 +92,21 @@ async def on_callback_query(client, callback_query):
         sender = await user_collection.find_one({'id': sender_id})
         receiver = await user_collection.find_one({'id': receiver_id})
 
+        # Check if users still exist and have characters
+        if not sender or not sender.get('characters'):
+            await callback_query.answer("Sender no longer has characters!", show_alert=True)
+            return
+            
+        if not receiver or not receiver.get('characters'):
+            await callback_query.answer("Receiver no longer has characters!", show_alert=True)
+            return
+
         sender_character = next((character for character in sender['characters'] if character['id'] == sender_character_id), None)
         receiver_character = next((character for character in receiver['characters'] if character['id'] == receiver_character_id), None)
 
-        
+        if not sender_character or not receiver_character:
+            await callback_query.answer("One of the characters is no longer available!", show_alert=True)
+            return
         
         sender['characters'].remove(sender_character)
         receiver['characters'].remove(receiver_character)
@@ -144,6 +164,11 @@ async def gift(client, message):
 
     sender = await user_collection.find_one({'id': sender_id})
 
+    # Check if user exists and has characters field
+    if not sender or not sender.get('characters'):
+        await message.reply_text("You don't have any characters to gift!")
+        return
+
     character = next((character for character in sender['characters'] if character['id'] == character_id), None)
 
     if not character:
@@ -168,7 +193,7 @@ async def gift(client, message):
     await message.reply_text(f"do You Really Wanns To Gift {message.reply_to_message.from_user.mention} ?", reply_markup=keyboard)
 
 @shivuu.on_callback_query(filters.create(lambda _, __, query: query.data in ["confirm_gift", "cancel_gift"]))
-async def on_callback_query(client, callback_query):
+async def on_gift_callback_query(client, callback_query):
     sender_id = callback_query.from_user.id
 
     
@@ -184,6 +209,10 @@ async def on_callback_query(client, callback_query):
         sender = await user_collection.find_one({'id': sender_id})
         receiver = await user_collection.find_one({'id': receiver_id})
 
+        # Check if sender still exists and has characters
+        if not sender or not sender.get('characters'):
+            await callback_query.answer("You no longer have characters to gift!", show_alert=True)
+            return
         
         sender['characters'].remove(gift['character'])
         await user_collection.update_one({'id': sender_id}, {'$set': {'characters': sender['characters']}})
