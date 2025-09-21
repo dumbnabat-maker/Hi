@@ -1,6 +1,7 @@
 import importlib
 import random
 import asyncio
+import time
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CommandHandler, CallbackContext, MessageHandler, filters
@@ -19,15 +20,83 @@ message_counts = {}
 retro_message_counts = {}  # Track messages for Retro spawns (every 4k messages)
 manually_summoned = {}  # Track manually summoned characters to allow multiple marriages
 
+# Spam detection system
+user_message_times = {}  # Track message timestamps per user {user_id: [timestamp1, timestamp2, ...]}
+blocked_users = {}  # Track blocked users {user_id: block_end_time}
+SPAM_MESSAGE_LIMIT = 7  # Max messages allowed
+SPAM_TIME_WINDOW = 10  # Time window in seconds to check for spam
+BLOCK_DURATION = 720  # Block duration in seconds (12 minutes)
+
 
 for module_name in ALL_MODULES:
     imported_module = importlib.import_module("shivu.modules." + module_name)
 
 
+def is_user_blocked(user_id: int) -> bool:
+    """Check if user is currently blocked"""
+    current_time = time.time()
+    if user_id in blocked_users:
+        if current_time < blocked_users[user_id]:
+            return True
+        else:
+            # Block expired, remove from blocked list
+            del blocked_users[user_id]
+    return False
+
+
+def detect_spam(user_id: int) -> bool:
+    """Detect if user is sending messages too quickly"""
+    current_time = time.time()
+    
+    # Initialize user message times if not exists
+    if user_id not in user_message_times:
+        user_message_times[user_id] = []
+    
+    # Add current message time
+    user_message_times[user_id].append(current_time)
+    
+    # Remove old messages outside the time window
+    user_message_times[user_id] = [
+        msg_time for msg_time in user_message_times[user_id] 
+        if current_time - msg_time <= SPAM_TIME_WINDOW
+    ]
+    
+    # Check if user exceeded message limit
+    if len(user_message_times[user_id]) > SPAM_MESSAGE_LIMIT:
+        # Block the user
+        blocked_users[user_id] = current_time + BLOCK_DURATION
+        user_message_times[user_id] = []  # Clear message history
+        LOGGER.warning(f"User {user_id} blocked for spam (sent {len(user_message_times[user_id])} messages in {SPAM_TIME_WINDOW}s)")
+        return True
+    
+    return False
 
 
 async def message_counter(update: Update, context: CallbackContext) -> None:
     chat_id = update.effective_chat.id
+    user_id = update.effective_user.id if update.effective_user else None
+    
+    # Skip processing if user is None (shouldn't happen, but safety check)
+    if user_id is None:
+        return
+    
+    # Check for spam and block user if necessary
+    if detect_spam(user_id):
+        await update.message.reply_text(
+            "⚠️ **Spam Detected!** ⚠️\n\n"
+            "You've been temporarily blocked for sending too many messages quickly.\n"
+            "🚫 **Block Duration:** 12 minutes\n\n"
+            "During this time, you cannot:\n"
+            "• Claim characters (/marry)\n"
+            "• Contribute to character spawns\n\n"
+            "Please slow down your messaging!",
+            parse_mode='Markdown'
+        )
+        return
+    
+    # Skip message counting if user is blocked
+    if is_user_blocked(user_id):
+        return
 
     if chat_id not in locks:
         locks[chat_id] = asyncio.Lock()
@@ -193,6 +262,20 @@ async def send_retro_character(update: Update, context: CallbackContext) -> None
 async def guess(update: Update, context: CallbackContext) -> None:
     chat_id = update.effective_chat.id
     user_id = update.effective_user.id
+    
+    # Check if user is blocked from spam
+    if is_user_blocked(user_id):
+        remaining_time = int(blocked_users[user_id] - time.time())
+        minutes = remaining_time // 60
+        seconds = remaining_time % 60
+        await update.message.reply_text(
+            f"🚫 **You are temporarily blocked!**\n\n"
+            f"⏰ **Time remaining:** {minutes}m {seconds}s\n\n"
+            f"You cannot claim characters while blocked for spam.\n"
+            f"Please wait for your block to expire.",
+            parse_mode='Markdown'
+        )
+        return
 
     if chat_id not in last_characters:
         await update.message.reply_text('🚫 No character has been summoned yet!\n\nCharacters appear automatically every 100 messages, or admins can use /summon to spawn one manually.')
