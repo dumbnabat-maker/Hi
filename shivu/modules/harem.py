@@ -398,7 +398,6 @@ async def fav_callback(client, callback_query):
 
 application.add_handler(CommandHandler(["harem", "collection"], harem,block=False))
 application.add_handler(CommandHandler("sorts", sorts, block=False))
-application.add_handler(CommandHandler("fav", fav, block=False))
 harem_handler = CallbackQueryHandler(harem_callback, pattern='^harem', block=False)
 application.add_handler(harem_handler)
     
