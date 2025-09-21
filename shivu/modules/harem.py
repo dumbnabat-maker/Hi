@@ -7,7 +7,7 @@ import random
 
 from telegram.ext import CommandHandler, CallbackContext, CallbackQueryHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from pyrogram import filters
+from pyrogram import filters, enums
 from pyrogram.types import InlineKeyboardButton as PyroInlineKeyboardButton, InlineKeyboardMarkup as PyroInlineKeyboardMarkup
 
 from shivu import collection, user_collection, application, SUPPORT_CHAT, CHARA_CHANNEL_ID, shivuu
@@ -297,7 +297,7 @@ async def fav(client, message):
             "💕 <b>Set Favorite Character</b>\n\n"
             "Usage: <code>/fav [character_id]</code>\n\n"
             "Example: <code>/fav 123</code>",
-            parse_mode='HTML'
+            parse_mode=enums.ParseMode.HTML
         )
         return
     
@@ -312,7 +312,7 @@ async def fav(client, message):
     # Find the character
     character = next((c for c in user['characters'] if c['id'] == character_id), None)
     if not character:
-        await message.reply_text(f"❌ You don't have character ID `{character_id}` in your collection!", parse_mode='Markdown')
+        await message.reply_text(f"❌ You don't have character ID `{character_id}` in your collection!", parse_mode=enums.ParseMode.MARKDOWN)
         return
     
     # Store pending favorite
@@ -352,13 +352,13 @@ async def fav(client, message):
             await message.reply_photo(
                 photo=processed_url,
                 caption=caption,
-                parse_mode='HTML',
+                parse_mode=enums.ParseMode.HTML,
                 reply_markup=keyboard
             )
         else:
-            await message.reply_text(caption, parse_mode='HTML', reply_markup=keyboard)
+            await message.reply_text(caption, parse_mode=enums.ParseMode.HTML, reply_markup=keyboard)
     except Exception as e:
-        await message.reply_text(caption, parse_mode='HTML', reply_markup=keyboard)
+        await message.reply_text(caption, parse_mode=enums.ParseMode.HTML, reply_markup=keyboard)
 
 @shivuu.on_callback_query(filters.create(lambda _, __, query: query.data in ["confirm_fav", "cancel_fav"]))
 async def fav_callback(client, callback_query):
@@ -381,13 +381,13 @@ async def fav_callback(client, callback_query):
         
         await callback_query.edit_message_caption(
             caption=f"💕 <b>Favorite Set!</b>\n\n🎴 <b>{escape(character['name'])}\n</b>📺 <b>{escape(character['anime'])}\n</b>✨ This character is now your favorite!",
-            parse_mode='HTML'
+            parse_mode=enums.ParseMode.HTML
         )
         
     elif callback_query.data == "cancel_fav":
         await callback_query.edit_message_caption(
             caption="❌ <b>Favorite cancelled.</b>",
-            parse_mode='HTML'
+            parse_mode=enums.ParseMode.HTML
         )
     
     # Clean up pending favorite
