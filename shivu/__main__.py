@@ -66,10 +66,16 @@ async def message_counter(update: Update, context: CallbackContext) -> None:
 async def send_image(update: Update, context: CallbackContext) -> None:
     chat_id = update.effective_chat.id
 
-    # Only get spawnable characters (exclude Limited Edition, Zenith, and Retro)
-    all_characters = list(await collection.find({
-        'rarity': {'$nin': ['Limited Edition', 'Zenith', 'Retro']}
-    }).to_list(length=None))
+    # Get locked character IDs
+    from shivu import locked_spawns_collection
+    locked_character_ids = [doc['character_id'] for doc in await locked_spawns_collection.find().to_list(length=None)]
+    
+    # Only get spawnable characters (exclude Limited Edition, Zenith, Retro, and locked characters)
+    filter_criteria = {
+        'rarity': {'$nin': ['Limited Edition', 'Zenith', 'Retro']},
+        'id': {'$nin': locked_character_ids}
+    }
+    all_characters = list(await collection.find(filter_criteria).to_list(length=None))
     
     # Check if there are any spawnable characters
     if not all_characters:

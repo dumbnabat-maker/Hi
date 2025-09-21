@@ -190,7 +190,7 @@ async def gift(client, message):
         ]
     )
 
-    await message.reply_text(f"do You Really Wanns To Gift {message.reply_to_message.from_user.mention} ?", reply_markup=keyboard)
+    await message.reply_text(f"Do you want to gift character ID `{character_id}` ({character['name']}) to {message.reply_to_message.from_user.mention}?", reply_markup=keyboard, parse_mode='Markdown')
 
 @shivuu.on_callback_query(filters.create(lambda _, __, query: query.data in ["confirm_gift", "cancel_gift"]))
 async def on_gift_callback_query(client, callback_query):

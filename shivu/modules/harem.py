@@ -7,8 +7,10 @@ import random
 
 from telegram.ext import CommandHandler, CallbackContext, CallbackQueryHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from pyrogram import filters
+from pyrogram.types import InlineKeyboardButton as PyroInlineKeyboardButton, InlineKeyboardMarkup as PyroInlineKeyboardMarkup
 
-from shivu import collection, user_collection, application, SUPPORT_CHAT, CHARA_CHANNEL_ID
+from shivu import collection, user_collection, application, SUPPORT_CHAT, CHARA_CHANNEL_ID, shivuu
 
 async def sorts(update: Update, context: CallbackContext) -> None:
     """Set harem sorting preference - rarity or name"""
@@ -282,8 +284,121 @@ async def harem_callback(update: Update, context: CallbackContext) -> None:
 
 
 
+# Pending favorites for confirmation
+pending_favorites = {}
+
+@shivuu.on_message(filters.command("fav"))
+async def fav(client, message):
+    """Set a favorite character with confirmation"""
+    user_id = message.from_user.id
+    
+    if len(message.command) != 2:
+        await message.reply_text(
+            "💕 <b>Set Favorite Character</b>\n\n"
+            "Usage: <code>/fav [character_id]</code>\n\n"
+            "Example: <code>/fav 123</code>",
+            parse_mode='HTML'
+        )
+        return
+    
+    character_id = message.command[1]
+    
+    # Get user's collection
+    user = await user_collection.find_one({'id': user_id})
+    if not user or not user.get('characters'):
+        await message.reply_text("❌ You don't have any characters yet!")
+        return
+    
+    # Find the character
+    character = next((c for c in user['characters'] if c['id'] == character_id), None)
+    if not character:
+        await message.reply_text(f"❌ You don't have character ID `{character_id}` in your collection!", parse_mode='Markdown')
+        return
+    
+    # Store pending favorite
+    pending_favorites[user_id] = character
+    
+    # Create confirmation keyboard
+    keyboard = PyroInlineKeyboardMarkup([
+        [PyroInlineKeyboardButton("✅ Confirm", callback_data="confirm_fav")],
+        [PyroInlineKeyboardButton("❌ Cancel", callback_data="cancel_fav")]
+    ])
+    
+    # Send character image with confirmation
+    rarity_emojis = {
+        "Common": "⚪️",
+        "Uncommon": "🟢",
+        "Rare": "🔵",
+        "Epic": "🟣",
+        "Legendary": "🟡",
+        "Mythic": "🏵",
+        "Retro": "🍥",
+        "Zenith": "🪩",
+        "Limited Edition": "🍬"
+    }
+    
+    rarity_emoji = rarity_emojis.get(character.get('rarity', 'Common'), "✨")
+    
+    caption = (f"💕 <b>Do you want to favorite this character?</b>\n\n"
+               f"🎴 <b>Name:</b> {escape(character['name'])}\n"
+               f"📺 <b>Anime:</b> {escape(character['anime'])}\n"
+               f"🌟 <b>Rarity:</b> {rarity_emoji} {character['rarity']}\n"
+               f"🆔 <b>ID:</b> <code>{character['id']}</code>")
+    
+    try:
+        if 'img_url' in character:
+            from shivu import process_image_url
+            processed_url = await process_image_url(character['img_url'])
+            await message.reply_photo(
+                photo=processed_url,
+                caption=caption,
+                parse_mode='HTML',
+                reply_markup=keyboard
+            )
+        else:
+            await message.reply_text(caption, parse_mode='HTML', reply_markup=keyboard)
+    except Exception as e:
+        await message.reply_text(caption, parse_mode='HTML', reply_markup=keyboard)
+
+@shivuu.on_callback_query(filters.create(lambda _, __, query: query.data in ["confirm_fav", "cancel_fav"]))
+async def fav_callback(client, callback_query):
+    """Handle favorite confirmation callbacks"""
+    user_id = callback_query.from_user.id
+    
+    if user_id not in pending_favorites:
+        await callback_query.answer("❌ No pending favorite found!", show_alert=True)
+        return
+    
+    if callback_query.data == "confirm_fav":
+        character = pending_favorites[user_id]
+        
+        # Update user's favorite
+        await user_collection.update_one(
+            {'id': user_id},
+            {'$set': {'favorites': [character['id']]}},
+            upsert=True
+        )
+        
+        await callback_query.edit_message_caption(
+            caption=f"💕 <b>Favorite Set!</b>\n\n🎴 <b>{escape(character['name'])}\n</b>📺 <b>{escape(character['anime'])}\n</b>✨ This character is now your favorite!",
+            parse_mode='HTML'
+        )
+        
+    elif callback_query.data == "cancel_fav":
+        await callback_query.edit_message_caption(
+            caption="❌ <b>Favorite cancelled.</b>",
+            parse_mode='HTML'
+        )
+    
+    # Clean up pending favorite
+    if user_id in pending_favorites:
+        del pending_favorites[user_id]
+    
+    await callback_query.answer()
+
 application.add_handler(CommandHandler(["harem", "collection"], harem,block=False))
 application.add_handler(CommandHandler("sorts", sorts, block=False))
+application.add_handler(CommandHandler("fav", fav, block=False))
 harem_handler = CallbackQueryHandler(harem_callback, pattern='^harem', block=False)
 application.add_handler(harem_handler)
     

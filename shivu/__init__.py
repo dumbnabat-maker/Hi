@@ -61,6 +61,7 @@ user_collection = db["user_collection_lmaoooo"]
 group_user_totals_collection = db['group_user_totalsssssss']
 top_global_groups_collection = db['top_global_groups']
 pm_users = db['total_pm_users']
+locked_spawns_collection = db['locked_spawns']
 
 # Helper function to handle JFIF and other image formats
 async def process_image_url(url):
