@@ -11,3 +11,8 @@ python-dotenv
 cachetools
 pysqlite3-binary
 motor
+motor
+pymongo
+pyrogram
+python-telegram-bot
+requests

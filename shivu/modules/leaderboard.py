@@ -83,7 +83,7 @@ async def leaderboard(update: Update, context: CallbackContext) -> None:
         if len(first_name) > 10:
             first_name = first_name[:15] + '...'
         character_count = user['character_count']
-        leaderboard_message += f'┣ {i:02d}.  {user_id} ⇒ {character_count}\n'
+        leaderboard_message += f'┣ {i:02d}.  {first_name} ⇒ {character_count}\n'
     
     leaderboard_message += "┗━┅┅┄┄⟞⟦🌐⟧⟝┄┄┉┉━┛"
     

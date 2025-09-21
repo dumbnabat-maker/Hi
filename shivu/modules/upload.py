@@ -454,7 +454,7 @@ async def find(update: Update, context: CallbackContext) -> None:
         # Create new format caption
         caption = f"OwO! Look out this character!\n\n"
         caption += f"{character['anime']}\n"
-        caption += f"{character['id']}: {character['name']} 👘\n"
+        caption += f"{character['id']}: {character['name']}\n"
         caption += f"({rarity_emoji} 𝙍𝘼𝙍𝙄𝙏𝙔: {character.get('rarity', 'Unknown').lower()})\n\n"
         caption += f"⦿ ɢʟᴏʙᴀʟʟʏ ᴄᴀᴜɢʜᴛ : {total_caught} ᴛɪᴍᴇs\n\n"
         caption += "🏆 ᴛᴏᴘ 10 ɢʟᴏʙᴀʟ ᴄᴀᴛᴄʜᴇʀs\n"

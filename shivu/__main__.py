@@ -6,7 +6,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CommandHandler, CallbackContext, MessageHandler, filters
 from html import escape
 
-from shivu import collection, top_global_groups_collection, group_user_totals_collection, user_collection, user_totals_collection, shivuu
+from shivu import collection, top_global_groups_collection, group_user_totals_collection, user_collection, user_totals_collection, locked_spawns_collection, shivuu
 from shivu import application, SUPPORT_CHAT, UPDATE_CHAT, db, LOGGER
 from shivu.modules import ALL_MODULES
 
@@ -16,7 +16,7 @@ last_characters = {}
 sent_characters = {}
 first_correct_guesses = {}
 message_counts = {}
-retro_message_counts = {}  # Track messages for Retro spawns (every 1k messages)
+retro_message_counts = {}  # Track messages for Retro spawns (every 4k messages)
 manually_summoned = {}  # Track manually summoned characters to allow multiple marriages
 
 
@@ -53,13 +53,13 @@ async def message_counter(update: Update, context: CallbackContext) -> None:
             
             message_counts[chat_id] = 0
         
-        # Check for Retro spawn (every 1000 messages)
+        # Check for Retro spawn (every 4000 messages)
         if chat_id in retro_message_counts:
             retro_message_counts[chat_id] += 1
         else:
             retro_message_counts[chat_id] = 1
             
-        if retro_message_counts[chat_id] % 1000 == 0:
+        if retro_message_counts[chat_id] % 4000 == 0:
             await send_retro_character(update, context)
             retro_message_counts[chat_id] = 0
             
@@ -67,7 +67,6 @@ async def send_image(update: Update, context: CallbackContext) -> None:
     chat_id = update.effective_chat.id
 
     # Get locked character IDs
-    from shivu import locked_spawns_collection
     locked_character_ids = [doc['character_id'] for doc in await locked_spawns_collection.find().to_list(length=None)]
     
     # Only get spawnable characters (exclude Limited Edition, Zenith, Retro, and locked characters)
@@ -138,7 +137,7 @@ async def send_image(update: Update, context: CallbackContext) -> None:
 
 
 async def send_retro_character(update: Update, context: CallbackContext) -> None:
-    """Send a Retro character every 1000 messages"""
+    """Send a Retro character every 4000 messages"""
     chat_id = update.effective_chat.id
     
     # Get only Retro characters
