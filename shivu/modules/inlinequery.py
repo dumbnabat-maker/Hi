@@ -138,7 +138,7 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
                 caption = (
                     f"OwO! Check out this waifu!\n\n"
                     f"{character['anime']}\n"
-                    f"{character['id']}: {character['name']} 👘\n"
+                    f"{character['id']}: {character['name']} \n"
                     f"({rarity_emoji}𝙍𝘼𝙍𝙄𝙏𝙔:  {character.get('rarity', 'Unknown').lower()})"
                 )
             elif query:
@@ -153,7 +153,7 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
                 caption = (
                     f"OwO! Check out this waifu!\n\n"
                     f"{character['anime']}\n"
-                    f"{character['id']}: {character['name']} 👘\n"
+                    f"{character['id']}: {character['name']} \n"
                     f"({rarity_emoji}𝙍𝘼𝙍𝙄𝙏𝙔:  {character.get('rarity', 'Unknown').lower()})"
                 )
             else:
@@ -161,7 +161,7 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
                 caption = (
                     f"OwO! Check out this waifu!\n\n"
                     f"{character['anime']}\n"
-                    f"{character['id']}: {character['name']} 👘\n"
+                    f"{character['id']}: {character['name']} \n"
                     f"({rarity_emoji}𝙍𝘼𝙍𝙄𝙏𝙔:  {character.get('rarity', 'Unknown').lower()})"
                 )
             
