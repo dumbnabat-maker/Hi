@@ -174,8 +174,7 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
                     thumbnail_url=processed_url,
                     id=f"{character['id']}_{time.time()}",
                     photo_url=processed_url,
-                    caption=caption,
-                    parse_mode='HTML'
+                    caption=caption
                 )
             )
         except Exception as e:

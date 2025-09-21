@@ -72,16 +72,20 @@ async def leaderboard(update: Update, context: CallbackContext) -> None:
     ])
     leaderboard_data = await cursor.to_list(length=10)
 
-    leaderboard_message = "<b>TOP 10 USERS WITH MOST CHARACTERS</b>\n\n"
+    leaderboard_message = "🌐 𝗚𝗟𝗢𝗕𝗔𝗟 𝗧𝗢𝗣 𝗖𝗼𝗹𝗹𝗲𝗰𝘁𝘀:\n"
+    leaderboard_message += "┏━┅┅┄┄⟞⟦🌐⟧⟝┄┄┉┉━┓\n"
 
     for i, user in enumerate(leaderboard_data, start=1):
         username = user.get('username', 'Unknown')
         first_name = html.escape(user.get('first_name', 'Unknown'))
+        user_id = user.get('_id', 'Unknown')  # MongoDB _id field
 
         if len(first_name) > 10:
             first_name = first_name[:15] + '...'
         character_count = user['character_count']
-        leaderboard_message += f'{i}. <a href="https://t.me/{username}"><b>{first_name}</b></a> ➾ <b>{character_count}</b>\n'
+        leaderboard_message += f'┣ {i:02d}.  {user_id} ⇒ {character_count}\n'
+    
+    leaderboard_message += "┗━┅┅┄┄⟞⟦🌐⟧⟝┄┄┉┉━┛"
     
     photo_url = random.choice(PHOTO_URL)
 
