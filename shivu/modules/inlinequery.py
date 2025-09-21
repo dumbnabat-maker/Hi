@@ -136,16 +136,10 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
                 user_list = ", ".join([f"{user.get('first_name', 'User')} (x{sum(1 for c in user.get('characters', []) if c['id'] == character['id'])})" for user in top_users])
                 
                 caption = (
-                    f"✨ <b><a href='tg://user?id={user['id']}'>{escape(user.get('first_name', 'User'))}</a>'s Collection</b> ✨\n"
-                    f"━━━━━━━━━━━━━━━━\n"
-                    f"🌸 <b>{character['name']}</b> <i>(x{user_character_count})</i>\n"
-                    f"🎌 <i>{character['anime']}</i> <code>({user_anime_characters}/{anime_characters})</code>\n"
-                    f"{rarity_emoji} <b>{character['rarity']}</b>\n"
-                    f"🆔 <code>#{character['id']}</code>\n"
-                    f"━━━━━━━━━━━━━━━━\n"
-                    f"📊 <b>Globally Caught:</b> {global_count} times\n"
-                    f"👥 <b>Top Owners:</b> {user_list if user_list else 'None'}\n"
-                    f"━━━━━━━━━━━━━━━━"
+                    f"OwO! Check out this waifu!\n\n"
+                    f"{character['anime']}\n"
+                    f"{character['id']}: {character['name']} 👘\n"
+                    f"({rarity_emoji}𝙍𝘼𝙍𝙄𝙏𝙔:  {character.get('rarity', 'Unknown').lower()})"
                 )
             elif query:
                 # For search queries, show detailed global stats
@@ -157,25 +151,18 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
                 user_list = ", ".join([f"{user.get('first_name', 'User')} (x{sum(1 for c in user.get('characters', []) if c['id'] == character['id'])})" for user in top_users])
                 
                 caption = (
-                    f"🔍 <b>Character Database</b> 🔍\n"
-                    f"━━━━━━━━━━━━━━━━\n"
-                    f"🌸 <b>{character['name']}</b>\n"
-                    f"🎌 <i>{character['anime']}</i>\n"
-                    f"{rarity_emoji} <b>{character['rarity']}</b>\n"
-                    f"🆔 <code>#{character['id']}</code>\n"
-                    f"━━━━━━━━━━━━━━━━\n"
-                    f"📊 <b>Caught {global_count} times globally</b>\n"
-                    f"👥 <b>Recent Owners:</b> {user_list if user_list else 'None'}\n"
-                    f"━━━━━━━━━━━━━━━━"
+                    f"OwO! Check out this waifu!\n\n"
+                    f"{character['anime']}\n"
+                    f"{character['id']}: {character['name']} 👘\n"
+                    f"({rarity_emoji}𝙍𝘼𝙍𝙄𝙏𝙔:  {character.get('rarity', 'Unknown').lower()})"
                 )
             else:
                 # For empty query, show simplified but styled info
                 caption = (
-                    f"🌟 <b>{character['name']}</b> 🌟\n"
-                    f"🎌 <i>{character['anime']}</i>\n"
-                    f"{rarity_emoji} <b>{character['rarity']}</b>\n"
-                    f"🆔 <code>#{character['id']}</code>\n"
-                    f"📊 <i>Caught {global_count} times</i>"
+                    f"OwO! Check out this waifu!\n\n"
+                    f"{character['anime']}\n"
+                    f"{character['id']}: {character['name']} 👘\n"
+                    f"({rarity_emoji}𝙍𝘼𝙍𝙄𝙏𝙔:  {character.get('rarity', 'Unknown').lower()})"
                 )
             
             # Process image URL for compatibility (handles JFIF and other formats)
