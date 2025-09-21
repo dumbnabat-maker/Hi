@@ -209,7 +209,7 @@ async def gift(client, message):
     caption = (f"🎁 <b>Do you want to gift this character?</b>\n\n"
                f"🎴 <b>Name:</b> {escape(character['name'])}\n"
                f"📺 <b>Anime:</b> {escape(character['anime'])}\n"
-               f"🌟 <b>Rarity:</b> {rarity_emoji} {character['rarity']}\n"
+               f"🌟 <b>Rarity:</b> {rarity_emoji} {character.get('rarity', 'Unknown')}\n"
                f"🆔 <b>ID:</b> <code>{character['id']}</code>\n\n"
                f"👤 <b>To:</b> {escape(message.reply_to_message.from_user.first_name)}")
 
@@ -268,13 +268,25 @@ async def on_gift_callback_query(client, callback_query):
         
         del pending_gifts[(sender_id, receiver_id)]
 
-        await callback_query.message.edit_text(f"You have successfully gifted your character to [{gift['receiver_first_name']}](tg://user?id={receiver_id})!")
+        success_message = f"✅ <b>Gift successful!</b>\n\nYou have successfully gifted your character to <a href=\"tg://user?id={receiver_id}\">{escape(gift['receiver_first_name'])}</a>!"
+        
+        # Check if message has media (photo) or is text
+        if callback_query.message.photo:
+            await callback_query.message.edit_caption(caption=success_message, parse_mode=enums.ParseMode.HTML)
+        else:
+            await callback_query.message.edit_text(success_message, parse_mode=enums.ParseMode.HTML)
 
     elif callback_query.data == "cancel_gift":
         
         del pending_gifts[(sender_id, receiver_id)]
 
-        await callback_query.message.edit_text("❌️ Gift Cancelled....")
+        cancel_message = "❌ <b>Gift cancelled.</b>"
+        
+        # Check if message has media (photo) or is text
+        if callback_query.message.photo:
+            await callback_query.message.edit_caption(caption=cancel_message, parse_mode=enums.ParseMode.HTML)
+        else:
+            await callback_query.message.edit_text(cancel_message, parse_mode=enums.ParseMode.HTML)
 
 
 @shivuu.on_message(filters.command("give"))

@@ -7,7 +7,7 @@ from pymongo import ReturnDocument
 from telegram import Update
 from telegram.ext import CommandHandler, CallbackContext
 
-from shivu import application, sudo_users, collection, db, CHARA_CHANNEL_ID, SUPPORT_CHAT
+from shivu import application, sudo_users, collection, db, CHARA_CHANNEL_ID, SUPPORT_CHAT, user_collection
 
 # Rarity styles for display purposes
 rarity_styles = {
@@ -428,17 +428,45 @@ async def find(update: Update, context: CallbackContext) -> None:
             return
         
         # Get rarity emoji
-        rarity_emoji = rarity_styles.get(character.get('rarity', ''), "")
+        rarity_emoji = rarity_styles.get(character.get('rarity', ''), "✨")
         
-        # Create beautiful character display
-        caption = (
-            f"✨ <b>{character['name']}</b> ✨\n"
-            f"🎌 <i>{character['anime']}</i>\n"
-            f"━━━━━━━━━━━━━━━━\n"
-            f"{rarity_emoji} <b>{character['rarity']}</b>\n"
-            f"🆔 <b>ID:</b> #{character['id']}\n"
-            f"━━━━━━━━━━━━━━━━"
-        )
+        # Find global catchers - users who have this character
+        global_catchers = []
+        total_caught = 0
+        
+        users_with_character = user_collection.find({"characters.id": character_id})
+        async for user in users_with_character:
+            user_id = user['id']
+            character_count = sum(1 for c in user.get('characters', []) if c.get('id') == character_id)
+            if character_count > 0:
+                user_name = user.get('first_name', f'User{user_id}')
+                global_catchers.append({
+                    'user_id': user_id,
+                    'name': user_name,
+                    'count': character_count
+                })
+                total_caught += character_count
+        
+        # Sort by count and get top 10
+        global_catchers.sort(key=lambda x: x['count'], reverse=True)
+        top_10 = global_catchers[:10]
+        
+        # Create new format caption
+        caption = f"OwO! Look out this character!\n\n"
+        caption += f"{character['anime']}\n"
+        caption += f"{character['id']}: {character['name']} 👘\n"
+        caption += f"({rarity_emoji} 𝙍𝘼𝙍𝙄𝙏𝙔: {character.get('rarity', 'Unknown').lower()})\n\n"
+        caption += f"⦿ ɢʟᴏʙᴀʟʟʏ ᴄᴀᴜɢʜᴛ : {total_caught} ᴛɪᴍᴇs\n\n"
+        caption += "🏆 ᴛᴏᴘ 10 ɢʟᴏʙᴀʟ ᴄᴀᴛᴄʜᴇʀs\n"
+        
+        for i in range(10):
+            if i < len(top_10):
+                catcher = top_10[i]
+                caption += f"{i+1}. {catcher['name']} → {catcher['count']}\n"
+            elif i == 4:  # Add the special invisible line at position 5
+                caption += "5. ⁭⁯⁯⁭⁯⁭⁯⁯⁭⁯⁭⁯⁯⁭⁯⁭⁯⁯⁭⁯⁭⁯⁯⁭⁯⁭⁯⁯⁭⁯⁭⁯⁯⁭⁯⁭⁯⁯⁭⁯⁭⁯⁯⁭⁯⁭⁯⁯⁭⁯⁭⁯⁯⁭⁯⁭⁯⁯⁭⁯⁭⁯⁯⁭\n"
+            else:
+                caption += f"{i+1}. \n"
         
         # Process the image URL for compatibility
         from shivu import process_image_url
