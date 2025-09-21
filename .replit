@@ -27,7 +27,7 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python -m shivu"
+args = "cd /home/runner/workspace && python -m shivu"
 
 [deployment]
 deploymentTarget = "vm"
