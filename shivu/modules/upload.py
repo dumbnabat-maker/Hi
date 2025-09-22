@@ -7,7 +7,7 @@ from pymongo import ReturnDocument
 from telegram import Update
 from telegram.ext import CommandHandler, CallbackContext
 
-from shivu import application, sudo_users, collection, db, CHARA_CHANNEL_ID, SUPPORT_CHAT, user_collection
+from shivu import application, sudo_users, uploading_users, collection, db, CHARA_CHANNEL_ID, SUPPORT_CHAT, user_collection
 
 # Rarity styles for display purposes
 rarity_styles = {
@@ -102,6 +102,19 @@ def validate_url(url):
 
 
 
+async def can_upload(user_id):
+    """Check if user has upload permissions (sudo_users, uploading_users env var, or dynamic uploading_users)"""
+    user_id_str = str(user_id)
+    
+    # Check if user is in sudo_users or env uploading_users
+    if user_id_str in sudo_users or user_id_str in uploading_users:
+        return True
+    
+    # Check if user is in dynamic uploading_users collection
+    dynamic_uploaders_collection = db['dynamic_uploading_users']
+    uploader = await dynamic_uploaders_collection.find_one({'user_id': user_id_str})
+    return uploader is not None
+
 async def get_next_sequence_number(sequence_name):
     sequence_collection = db.sequences
     sequence_document = await sequence_collection.find_one_and_update(
@@ -116,8 +129,8 @@ async def upload(update: Update, context: CallbackContext) -> None:
     if not update.effective_user or not update.message:
         return
         
-    if str(update.effective_user.id) not in sudo_users:
-        await update.message.reply_text('Ask My Owner...')
+    if not await can_upload(update.effective_user.id):
+        await update.message.reply_text('Ask My Owner or authorized uploader...')
         return
 
     try:
@@ -656,6 +669,122 @@ async def migrate_rarities(update: Update, context: CallbackContext) -> None:
         await update.message.reply_text(f'❌ Error during migration: {str(e)}')
 
 
+async def adduploader(update: Update, context: CallbackContext) -> None:
+    """Add a user to the uploading users list (owners only)"""
+    if not update.effective_user or not update.message:
+        return
+    
+    # Check if user is an owner
+    OWNERS = ["8376223999", "6702213812"]
+    if str(update.effective_user.id) not in OWNERS:
+        await update.message.reply_text('🚫 Only owners can use this command.')
+        return
+    
+    if not context.args or len(context.args) != 1:
+        await update.message.reply_text(
+            '📝 **Add Uploader Usage:**\n\n'
+            '`/adduploader [user_id]`\n\n'
+            '**Example:** `/adduploader 123456789`\n\n'
+            'This will give the user upload permissions.',
+            parse_mode='Markdown'
+        )
+        return
+    
+    try:
+        user_id_to_add = context.args[0]
+        
+        # Validate user_id is numeric
+        if not user_id_to_add.isdigit():
+            await update.message.reply_text('❌ Invalid user ID! Please provide a numeric user ID.')
+            return
+        
+        # Check if already an uploader
+        dynamic_uploaders_collection = db['dynamic_uploading_users']
+        existing = await dynamic_uploaders_collection.find_one({'user_id': user_id_to_add})
+        
+        if existing:
+            await update.message.reply_text(f'⚠️ User `{user_id_to_add}` is already an uploader!')
+            return
+        
+        # Check if already sudo user
+        if user_id_to_add in sudo_users:
+            await update.message.reply_text(f'⚠️ User `{user_id_to_add}` is already a sudo user (has all permissions)!')
+            return
+        
+        # Add to uploaders collection
+        await dynamic_uploaders_collection.insert_one({
+            'user_id': user_id_to_add,
+            'added_by': update.effective_user.id,
+            'added_by_username': update.effective_user.username or update.effective_user.first_name,
+            'added_at': update.message.date
+        })
+        
+        await update.message.reply_text(
+            f'✅ **Uploader Added!**\n\n'
+            f'👤 **User ID:** `{user_id_to_add}`\n'
+            f'🔑 **Permissions:** Upload characters only\n'
+            f'👨‍💼 **Added by:** {update.effective_user.first_name}\n\n'
+            f'The user can now use the `/upload` command.',
+            parse_mode='Markdown'
+        )
+        
+    except Exception as e:
+        await update.message.reply_text(f'❌ Error adding uploader: {str(e)}')
+
+
+async def removeuploader(update: Update, context: CallbackContext) -> None:
+    """Remove a user from the uploading users list (owners only)"""
+    if not update.effective_user or not update.message:
+        return
+    
+    # Check if user is an owner
+    OWNERS = ["8376223999", "6702213812"]
+    if str(update.effective_user.id) not in OWNERS:
+        await update.message.reply_text('🚫 Only owners can use this command.')
+        return
+    
+    if not context.args or len(context.args) != 1:
+        await update.message.reply_text(
+            '📝 **Remove Uploader Usage:**\n\n'
+            '`/removeuploader [user_id]`\n\n'
+            '**Example:** `/removeuploader 123456789`\n\n'
+            'This will remove the user\'s upload permissions.',
+            parse_mode='Markdown'
+        )
+        return
+    
+    try:
+        user_id_to_remove = context.args[0]
+        
+        # Validate user_id is numeric
+        if not user_id_to_remove.isdigit():
+            await update.message.reply_text('❌ Invalid user ID! Please provide a numeric user ID.')
+            return
+        
+        # Check if user is in uploaders collection
+        dynamic_uploaders_collection = db['dynamic_uploading_users']
+        uploader = await dynamic_uploaders_collection.find_one({'user_id': user_id_to_remove})
+        
+        if not uploader:
+            await update.message.reply_text(f'❌ User `{user_id_to_remove}` is not currently an uploader!')
+            return
+        
+        # Remove from uploaders collection
+        await dynamic_uploaders_collection.delete_one({'user_id': user_id_to_remove})
+        
+        await update.message.reply_text(
+            f'✅ **Uploader Removed!**\n\n'
+            f'👤 **User ID:** `{user_id_to_remove}`\n'
+            f'❌ **Permissions:** Upload access revoked\n'
+            f'👨‍💼 **Removed by:** {update.effective_user.first_name}\n\n'
+            f'The user can no longer use the `/upload` command.',
+            parse_mode='Markdown'
+        )
+        
+    except Exception as e:
+        await update.message.reply_text(f'❌ Error removing uploader: {str(e)}')
+
+
 UPLOAD_HANDLER = CommandHandler('upload', upload, block=False)
 application.add_handler(UPLOAD_HANDLER)
 DELETE_HANDLER = CommandHandler('delete', delete, block=False)
@@ -672,3 +801,7 @@ REMOVE_HANDLER = CommandHandler('remove', remove_character_from_user, block=Fals
 application.add_handler(REMOVE_HANDLER)
 MIGRATE_HANDLER = CommandHandler('migrate_rarities', migrate_rarities, block=False)
 application.add_handler(MIGRATE_HANDLER)
+ADDUPLOADER_HANDLER = CommandHandler('adduploader', adduploader, block=False)
+application.add_handler(ADDUPLOADER_HANDLER)
+REMOVEUPLOADER_HANDLER = CommandHandler('removeuploader', removeuploader, block=False)
+application.add_handler(REMOVEUPLOADER_HANDLER)

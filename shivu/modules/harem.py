@@ -13,7 +13,7 @@ from pyrogram.types import InlineKeyboardButton as PyroInlineKeyboardButton, Inl
 from shivu import collection, user_collection, application, SUPPORT_CHAT, CHARA_CHANNEL_ID, shivuu
 
 async def sorts(update: Update, context: CallbackContext) -> None:
-    """Set harem sorting preference - rarity or name"""
+    """Set harem filtering and sorting preferences"""
     if not update.effective_user or not update.message:
         return
         
@@ -22,42 +22,140 @@ async def sorts(update: Update, context: CallbackContext) -> None:
     
     if not args:
         await update.message.reply_text(
-            "🔧 <b>Harem Sorting</b>\n\n"
+            "🔧 <b>Harem Filtering & Sorting</b>\n\n"
             "Set how you want your harem displayed:\n\n"
             "📝 <b>Available options:</b>\n"
-            "• <code>/sorts rarity</code> - Sort by rarity\n"
+            "• <code>/sorts rarity [rarity_name]</code> - Filter by specific rarity\n"
+            "• <code>/sorts character [character_name]</code> - Filter by character name\n"
             "• <code>/sorts name</code> - Sort by character name\n"
-            "• <code>/sorts limited_time</code> - Show limited time cards first\n\n"
-            "💡 Your current sorting will be remembered for future /harem displays!",
+            "• <code>/sorts limited_time</code> - Show limited time cards first\n"
+            "• <code>/sorts reset</code> - Reset filters and show all\n\n"
+            "<b>Examples:</b>\n"
+            "• <code>/sorts rarity Legendary</code>\n"
+            "• <code>/sorts character Naruto</code>\n\n"
+            "💡 Your preferences will be remembered for future /harem displays!",
             parse_mode='HTML'
         )
         return
     
     sort_type = args[0].lower()
     
-    if sort_type not in ['rarity', 'name', 'limited_time']:
+    # Handle reset option
+    if sort_type == 'reset':
+        await user_collection.update_one(
+            {'id': user_id}, 
+            {'$unset': {'sort_preference': '', 'filter_type': '', 'filter_value': ''}}, 
+            upsert=True
+        )
         await update.message.reply_text(
-            "❌ Invalid sort type!\n\n"
-            "Available options:\n"
-            "• <code>/sorts rarity</code>\n"
-            "• <code>/sorts name</code>\n"
-            "• <code>/sorts limited_time</code>",
+            "✅ Harem filters and sorting have been reset!\n\n"
+            "Your /harem will now show all characters sorted by anime. 📋",
             parse_mode='HTML'
         )
         return
     
-    # Update user's sort preference
-    await user_collection.update_one(
-        {'id': user_id}, 
-        {'$set': {'sort_preference': sort_type}}, 
-        upsert=True
-    )
-    
-    await update.message.reply_text(
-        f"✅ Harem sorting set to <b>{sort_type}</b>!\n\n"
-        f"Your /harem will now be sorted by {sort_type}. 📋",
-        parse_mode='HTML'
-    )
+    # Handle filtering options
+    if sort_type == 'rarity':
+        if len(args) < 2:
+            valid_rarities = ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Retro", "Zenith", "Limited Edition"]
+            await update.message.reply_text(
+                "❌ Please specify a rarity!\n\n"
+                "<b>Valid rarities:</b>\n" + 
+                "\n".join([f"• <code>{r}</code>" for r in valid_rarities]),
+                parse_mode='HTML'
+            )
+            return
+        
+        rarity_filter = ' '.join(args[1:]).title()
+        valid_rarities = ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Retro", "Zenith", "Limited Edition"]
+        
+        if rarity_filter not in valid_rarities:
+            await update.message.reply_text(
+                f"❌ Invalid rarity '{rarity_filter}'!\n\n"
+                "<b>Valid rarities:</b>\n" + 
+                "\n".join([f"• <code>{r}</code>" for r in valid_rarities]),
+                parse_mode='HTML'
+            )
+            return
+        
+        # Update user's filter preference
+        await user_collection.update_one(
+            {'id': user_id}, 
+            {'$set': {'filter_type': 'rarity', 'filter_value': rarity_filter, 'sort_preference': 'rarity'}}, 
+            upsert=True
+        )
+        
+        await update.message.reply_text(
+            f"✅ Harem filter set to <b>{rarity_filter}</b> rarity only!\n\n"
+            f"Your /harem will now show only {rarity_filter} characters. 📋",
+            parse_mode='HTML'
+        )
+        
+    elif sort_type == 'character':
+        if len(args) < 2:
+            await update.message.reply_text(
+                "❌ Please specify a character name!\n\n"
+                "<b>Example:</b> <code>/sorts character Naruto</code>",
+                parse_mode='HTML'
+            )
+            return
+        
+        character_filter = ' '.join(args[1:]).title()
+        
+        # Check if user has this character
+        user = await user_collection.find_one({'id': user_id})
+        if not user or not user.get('characters'):
+            await update.message.reply_text("❌ You don't have any characters yet!")
+            return
+        
+        # Check if character exists in user's collection
+        character_exists = any(char['name'].lower() == character_filter.lower() for char in user['characters'])
+        if not character_exists:
+            await update.message.reply_text(
+                f"❌ You don't have any characters named '{character_filter}' in your collection!",
+                parse_mode='HTML'
+            )
+            return
+        
+        # Update user's filter preference
+        await user_collection.update_one(
+            {'id': user_id}, 
+            {'$set': {'filter_type': 'character', 'filter_value': character_filter, 'sort_preference': 'name'}}, 
+            upsert=True
+        )
+        
+        await update.message.reply_text(
+            f"✅ Harem filter set to <b>{character_filter}</b> character only!\n\n"
+            f"Your /harem will now show only {character_filter} cards (all rarities). 📋",
+            parse_mode='HTML'
+        )
+        
+    elif sort_type in ['name', 'limited_time']:
+        # Update user's sort preference and clear any filters
+        await user_collection.update_one(
+            {'id': user_id}, 
+            {'$set': {'sort_preference': sort_type}, '$unset': {'filter_type': '', 'filter_value': ''}}, 
+            upsert=True
+        )
+        
+        await update.message.reply_text(
+            f"✅ Harem sorting set to <b>{sort_type}</b>!\n\n"
+            f"Your /harem will now be sorted by {sort_type}. 📋",
+            parse_mode='HTML'
+        )
+        
+    else:
+        await update.message.reply_text(
+            "❌ Invalid command!\n\n"
+            "Available options:\n"
+            "• <code>/sorts rarity [rarity_name]</code>\n"
+            "• <code>/sorts character [character_name]</code>\n"
+            "• <code>/sorts name</code>\n"
+            "• <code>/sorts limited_time</code>\n"
+            "• <code>/sorts reset</code>",
+            parse_mode='HTML'
+        )
+        return
 
 
 async def harem(update: Update, context: CallbackContext, page=0) -> None:
@@ -74,27 +172,37 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
             await update.callback_query.edit_message_text('You Have Not Guessed any Characters Yet..')
         return
 
-    # Get user's sort preference
+    # Get user's filter and sort preferences
+    filter_type = user.get('filter_type')
+    filter_value = user.get('filter_value')
     sort_preference = user.get('sort_preference', 'anime')  # Default to anime (current behavior)
     
+    # Apply filters first
+    characters = user['characters']
+    if filter_type == 'rarity' and filter_value:
+        characters = [char for char in characters if char.get('rarity') == filter_value]
+    elif filter_type == 'character' and filter_value:
+        characters = [char for char in characters if char['name'].lower() == filter_value.lower()]
+    
+    # Then apply sorting
     if sort_preference == 'rarity':
         # Sort by rarity (rarest first) then by name
         rarity_order = ["Limited Edition", "Zenith", "Retro", "Mythic", "Legendary", "Epic", "Rare", "Uncommon", "Common"]
-        characters = sorted(user['characters'], key=lambda x: (rarity_order.index(x.get('rarity', 'Common')), x['name']))
+        characters = sorted(characters, key=lambda x: (rarity_order.index(x.get('rarity', 'Common')), x['name']))
     elif sort_preference == 'name':
         # Sort by character name alphabetically
-        characters = sorted(user['characters'], key=lambda x: x['name'])
+        characters = sorted(characters, key=lambda x: x['name'])
     elif sort_preference == 'limited_time':
         # Sort by limited time cards first, then by rarity, then by name
         rarity_order = ["Limited Edition", "Zenith", "Retro", "Mythic", "Legendary", "Epic", "Rare", "Uncommon", "Common"]
-        characters = sorted(user['characters'], key=lambda x: (
+        characters = sorted(characters, key=lambda x: (
             0 if x.get('rarity') == 'Limited Edition' else 1,  # Limited Edition first
             rarity_order.index(x.get('rarity', 'Common')),
             x['name']
         ))
     else:
         # Default: sort by anime then ID (existing behavior)
-        characters = sorted(user['characters'], key=lambda x: (x['anime'], x['id']))
+        characters = sorted(characters, key=lambda x: (x['anime'], x['id']))
 
     # Use Counter to properly count character occurrences regardless of sort order
     character_counts = Counter(character['id'] for character in user['characters'])
@@ -109,7 +217,16 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
         page = 0  
 
     user_name = update.effective_user.first_name or "User"
-    harem_message = f"<b>{escape(user_name)}'s Harem - Page {page+1}/{total_pages}</b>\n"
+    
+    # Build harem title with filter info
+    title = f"{escape(user_name)}'s Harem"
+    if filter_type == 'rarity' and filter_value:
+        title += f" [{filter_value} Only]"
+    elif filter_type == 'character' and filter_value:
+        title += f" [{filter_value} Only]"
+    title += f" - Page {page+1}/{total_pages}"
+    
+    harem_message = f"<b>{title}</b>\n"
 
     
     current_characters = unique_characters[page*15:(page+1)*15]

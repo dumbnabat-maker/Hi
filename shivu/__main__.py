@@ -315,10 +315,11 @@ async def guess(update: Update, context: CallbackContext) -> None:
             if any(part.startswith(guess) for part in name_parts):
                 return True
                 
-        # 4. Fuzzy match - guess contains or is contained in any part
-        if len(guess) >= 3:
-            if any(guess in part or part in guess for part in name_parts):
-                return True
+        # 4. Stricter fuzzy match - only allow if guess is contained in part AND is at least half the length
+        if len(guess) >= 4:
+            for part in name_parts:
+                if guess in part and len(guess) >= len(part) * 0.7:
+                    return True
                 
         return False
 

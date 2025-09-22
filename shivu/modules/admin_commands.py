@@ -125,7 +125,8 @@ async def lockedspawns(client, message):
     if not locked_characters:
         await message.reply_text(
             "🔓 **No Locked Spawns**\n\n"
-            "There are currently no characters locked from spawning."
+            "There are currently no characters locked from spawning.",
+            parse_mode='Markdown'
         )
         return
     

@@ -32,6 +32,7 @@ SUPPORT_CHAT = Config.SUPPORT_CHAT
 UPDATE_CHAT = Config.UPDATE_CHAT
 BOT_USERNAME = Config.BOT_USERNAME 
 sudo_users = Config.sudo_users
+uploading_users = Config.uploading_users
 OWNER_ID = Config.OWNER_ID 
 
 # Validate required environment variables

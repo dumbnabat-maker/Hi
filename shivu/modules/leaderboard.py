@@ -21,15 +21,22 @@ async def global_leaderboard(update: Update, context: CallbackContext) -> None:
     ])
     leaderboard_data = await cursor.to_list(length=10)
 
-    leaderboard_message = "<b>TOP 10 GROUPS WHO GUESSED MOST CHARACTERS</b>\n\n"
+    leaderboard_message = "🌐  𝗧𝗢𝗣 𝗚𝗿𝗼𝘂𝗽𝘀:\n"
+    leaderboard_message += "┏━┅┅┄┄⟞⟦👥⟧⟝┄┄┉┉━┓\n"
 
     for i, group in enumerate(leaderboard_data, start=1):
         group_name = html.escape(group.get('group_name', 'Unknown'))
 
-        if len(group_name) > 10:
-            group_name = group_name[:15] + '...'
+        if len(group_name) > 20:
+            group_name = group_name[:20] + '...'
         count = group['count']
-        leaderboard_message += f'{i}. <b>{group_name}</b> ➾ <b>{count}</b>\n'
+        leaderboard_message += f'┣ {i:02d}.  {group_name} ⇒ {count}\n'
+    
+    # Fill remaining slots up to 10 with empty entries
+    for i in range(len(leaderboard_data) + 1, 11):
+        leaderboard_message += f'┣ {i:02d}.  ⇒ \n'
+    
+    leaderboard_message += "┗━┅┅┄┄⟞⟦👥⟧⟝┄┄┉┉━┛"
     
     
     photo_url = random.choice(PHOTO_URL)
@@ -66,8 +73,25 @@ async def ctop(update: Update, context: CallbackContext) -> None:
 async def leaderboard(update: Update, context: CallbackContext) -> None:
     
     cursor = user_collection.aggregate([
-        {"$project": {"username": 1, "first_name": 1, "character_count": {"$size": "$characters"}}},
-        {"$sort": {"character_count": -1}},
+        {
+            "$project": {
+                "username": 1, 
+                "first_name": 1, 
+                "total_characters": {"$size": "$characters"},
+                "unique_characters": {
+                    "$size": {
+                        "$setUnion": [
+                            {"$map": {
+                                "input": "$characters",
+                                "as": "char",
+                                "in": "$$char.id"
+                            }}, []
+                        ]
+                    }
+                }
+            }
+        },
+        {"$sort": {"unique_characters": -1}},
         {"$limit": 10}
     ])
     leaderboard_data = await cursor.to_list(length=10)
@@ -82,8 +106,9 @@ async def leaderboard(update: Update, context: CallbackContext) -> None:
 
         if len(first_name) > 10:
             first_name = first_name[:15] + '...'
-        character_count = user['character_count']
-        leaderboard_message += f'┣ {i:02d}.  {first_name} ⇒ {character_count}\n'
+        unique_count = user['unique_characters']
+        total_count = user['total_characters']
+        leaderboard_message += f'┣ {i:02d}.  {first_name} ⇒ {unique_count} (total {total_count})\n'
     
     leaderboard_message += "┗━┅┅┄┄⟞⟦🌐⟧⟝┄┄┉┉━┛"
     
