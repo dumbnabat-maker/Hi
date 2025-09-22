@@ -232,3 +232,4 @@ async def rarity(client, message):
     )
     
     await message.reply_text(message_text, parse_mode='Markdown')
+    
