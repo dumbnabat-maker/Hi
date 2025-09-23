@@ -229,7 +229,7 @@ async def rarity(client, message):
         "• Retro cards only spawn every 4000 messages\n"
         "• Use `/lockspawn` to prevent specific cards from spawning (admin only)\n\n"
         "✨ Good luck collecting!"
-
+    )
 
         
-    await message.reply_text(message_text, parse_mode='markdown')
+    await message.reply_text(message_text, parse_mode='markdown') 
