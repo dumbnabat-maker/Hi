@@ -218,6 +218,14 @@ async def send_retro_character(update: Update, context: CallbackContext) -> None
         LOGGER.warning("No Retro characters available to spawn")
         return
     
+    # Filter out locked characters
+    locked_character_ids = await locked_spawns_collection.distinct('character_id')
+    retro_characters = [char for char in retro_characters if char['id'] not in locked_character_ids]
+    
+    if not retro_characters:
+        LOGGER.info("No unlocked Retro characters available to spawn")
+        return
+    
     # Track sent Retro characters separately to avoid repeats
     retro_sent_key = f"{chat_id}_retro"
     
@@ -277,6 +285,25 @@ async def guess(update: Update, context: CallbackContext) -> None:
         )
         return
 
+    # Check daily marriage limit (30 per day)
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    
+    user_data = await user_collection.find_one({'id': user_id})
+    if user_data:
+        daily_marriages = user_data.get('daily_marriages', {})
+        today_count = daily_marriages.get(today, 0)
+        
+        if today_count >= 30:
+            await update.message.reply_text(
+                f"💒 **Daily Marriage Limit Reached!**\n\n"
+                f"❌ You've already married **{today_count}/30** characters today.\n\n"
+                f"⏰ **Reset time:** Tomorrow at 00:00 UTC\n\n"
+                f"Come back tomorrow to continue building your harem!",
+                parse_mode='Markdown'
+            )
+            return
+
     if chat_id not in last_characters:
         await update.message.reply_text('🚫 No character has been summoned yet!\n\nCharacters appear automatically every 100 messages, or admins can use /summon to spawn one manually.')
         return
@@ -328,6 +355,10 @@ async def guess(update: Update, context: CallbackContext) -> None:
         if chat_id not in manually_summoned:
             first_correct_guesses[chat_id] = user_id
         
+        # Update daily marriage counter
+        from datetime import datetime, timezone
+        today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+        
         user = await user_collection.find_one({'id': user_id})
         if user:
             update_fields = {}
@@ -340,17 +371,25 @@ async def guess(update: Update, context: CallbackContext) -> None:
             if 'characters' not in user or user['characters'] is None:
                 update_fields['characters'] = []
                 
+            # Update daily marriage counter
+            daily_marriages = user.get('daily_marriages', {})
+            daily_marriages[today] = daily_marriages.get(today, 0) + 1
+            update_fields[f'daily_marriages.{today}'] = daily_marriages[today]
+                
             if update_fields:
                 await user_collection.update_one({'id': user_id}, {'$set': update_fields})
             
             await user_collection.update_one({'id': user_id}, {'$push': {'characters': last_characters[chat_id]}})
       
         elif hasattr(update.effective_user, 'username'):
+            # For new users, also initialize daily marriage counter
+            daily_marriages = {today: 1}
             await user_collection.insert_one({
                 'id': user_id,
                 'username': update.effective_user.username,
                 'first_name': update.effective_user.first_name,
                 'characters': [last_characters[chat_id]],
+                'daily_marriages': daily_marriages
             })
 
         

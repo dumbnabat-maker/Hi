@@ -126,7 +126,7 @@ async def lockedspawns(client, message):
         await message.reply_text(
             "🔓 **No Locked Spawns**\n\n"
             "There are currently no characters locked from spawning.",
-            parse_mode='Markdown'
+            parse_mode='markdown'
         )
         return
     
@@ -181,11 +181,11 @@ async def lockedspawns(client, message):
         
         for i, part in enumerate(parts):
             if i == 0:
-                await message.reply_text(part, parse_mode='Markdown')
+                await message.reply_text(part, parse_mode='markdown')
             else:
-                await message.reply_text(f"**Continued...**\n\n{part}", parse_mode='Markdown')
+                await message.reply_text(f"**Continued...**\n\n{part}", parse_mode='markdown')
     else:
-        await message.reply_text(full_message, parse_mode='Markdown')
+        await message.reply_text(full_message, parse_mode='markdown')
 
 @shivuu.on_message(filters.command("rarity"))
 async def rarity(client, message):
@@ -229,7 +229,7 @@ async def rarity(client, message):
         "• Retro cards only spawn every 4000 messages\n"
         "• Use `/lockspawn` to prevent specific cards from spawning (admin only)\n\n"
         "✨ Good luck collecting!"
-    )
-    
-    await message.reply_text(message_text, parse_mode='Markdown')
-    
+
+
+        
+    await message.reply_text(message_text, parse_mode='markdown')
