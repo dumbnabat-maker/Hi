@@ -1,4 +1,4 @@
-from pyrogram import filters
+from pyrogram import filters, enums
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from shivu import collection, locked_spawns_collection, shivuu
@@ -20,7 +20,7 @@ async def lockspawn(client, message):
             "`/lockspawn [character_id]`\n\n"
             "**Example:** `/lockspawn 123`\n\n"
             "This will prevent the character from appearing in spawns.",
-            parse_mode='Markdown'
+            parse_mode=enums.ParseMode.MARKDOWN
         )
         return
     
@@ -93,7 +93,7 @@ async def unlockspawn(client, message):
             "`/unlockspawn [character_id]`\n\n"
             "**Example:** `/unlockspawn 123`\n\n"
             "This will allow the character to appear in spawns again.",
-            parse_mode='Markdown'
+            parse_mode=enums.ParseMode.MARKDOWN
         )
         return
     
@@ -181,11 +181,11 @@ async def lockedspawns(client, message):
         
         for i, part in enumerate(parts):
             if i == 0:
-                await message.reply_text(part, parse_mode='markdown')
+                await message.reply_text(part, parse_mode=enums.ParseMode.MARKDOWN)
             else:
-                await message.reply_text(f"**Continued...**\n\n{part}", parse_mode='markdown')
+                await message.reply_text(f"**Continued...**\n\n{part}", parse_mode=enums.ParseMode.MARKDOWN)
     else:
-        await message.reply_text(full_message, parse_mode='markdown')
+        await message.reply_text(full_message, parse_mode=enums.ParseMode.MARKDOWN)
 
 @shivuu.on_message(filters.command("rarity"))
 async def rarity(client, message):
@@ -230,6 +230,11 @@ async def rarity(client, message):
         "• Use `/lockspawn` to prevent specific cards from spawning (admin only)\n\n"
         "✨ Good luck collecting!"
     )
+<<<<<<< HEAD
 
         
     await message.reply_text(message_text, parse_mode='markdown') 
+=======
+    
+    await message.reply_text(message_text, parse_mode=enums.ParseMode.MARKDOWN)
+>>>>>>> deed864 (Update parse mode for text messages and add group membership check)

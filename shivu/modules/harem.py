@@ -9,8 +9,26 @@ from telegram.ext import CommandHandler, CallbackContext, CallbackQueryHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from pyrogram import filters, enums
 from pyrogram.types import InlineKeyboardButton as PyroInlineKeyboardButton, InlineKeyboardMarkup as PyroInlineKeyboardMarkup
+from pyrogram.errors import UserNotParticipant, ChatAdminRequired, PeerIdInvalid
 
-from shivu import collection, user_collection, application, SUPPORT_CHAT, CHARA_CHANNEL_ID, shivuu
+from shivu import collection, user_collection, application, SUPPORT_CHAT, CHARA_CHANNEL_ID, shivuu, sudo_users
+
+# Main group for membership checking
+MAIN_GROUP = "@CollectorOfficialGroup"
+
+async def check_group_membership(user_id: int) -> bool:
+    """Check if user is a member of the main group"""
+    try:
+        member = await shivuu.get_chat_member(MAIN_GROUP, user_id)
+        # Check if user is member, admin, or creator
+        return member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]
+    except (UserNotParticipant, ChatAdminRequired, PeerIdInvalid):
+        return False
+    except Exception as e:
+        # Fail-closed: deny access on any unexpected error
+        from shivu import LOGGER
+        LOGGER.error(f"Error checking group membership for user {user_id}: {e}")
+        return False
 
 async def sorts(update: Update, context: CallbackContext) -> None:
     """Set harem filtering and sorting preferences"""
@@ -163,6 +181,20 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
         return
         
     user_id = update.effective_user.id
+
+    # Check if user is a member of the main group
+    if not await check_group_membership(user_id):
+        message_text = (
+            "🚫 <b>Access Restricted</b>\n\n"
+            f"To use the /harem command, you must join our main group:\n"
+            f"👥 {MAIN_GROUP}\n\n"
+            f"Once you've joined, you'll be able to access your harem!"
+        )
+        if update.message:
+            await update.message.reply_text(message_text, parse_mode='HTML')
+        elif update.callback_query:
+            await update.callback_query.edit_message_text(message_text, parse_mode='HTML')
+        return
 
     user = await user_collection.find_one({'id': user_id})
     if not user:
@@ -515,8 +547,96 @@ async def fav_callback(client, callback_query):
     
     await callback_query.answer()
 
+async def transfer_harem(update: Update, context: CallbackContext) -> None:
+    """Transfer a user's harem from old user_id to new user_id (admin only)"""
+    if not update.effective_user or not update.message:
+        return
+        
+    user_id = update.effective_user.id
+    
+    # Check if user is admin
+    from shivu.config import Config
+    if str(user_id) not in [str(u) for u in Config.sudo_users]:
+        await update.message.reply_text('🚫 This command is only available to bot administrators.')
+        return
+    
+    args = context.args or []
+    if len(args) != 2:
+        await update.message.reply_text(
+            "📝 <b>Transfer Harem Usage:</b>\n\n"
+            "<code>/transfer [old_user_id] [new_user_id]</code>\n\n"
+            "<b>Example:</b> <code>/transfer 123456789 987654321</code>\n\n"
+            "This will transfer all characters from the old user to the new user.",
+            parse_mode='HTML'
+        )
+        return
+    
+    try:
+        old_user_id = int(args[0])
+        new_user_id = int(args[1])
+    except ValueError:
+        await update.message.reply_text("❌ Invalid user IDs! Please provide valid numeric user IDs.")
+        return
+    
+    if old_user_id == new_user_id:
+        await update.message.reply_text("❌ Old and new user IDs cannot be the same!")
+        return
+    
+    # Find the old user's collection
+    old_user = await user_collection.find_one({'id': old_user_id})
+    if not old_user or not old_user.get('characters'):
+        await update.message.reply_text(f"❌ User {old_user_id} has no characters to transfer!")
+        return
+    
+    # Get character count for confirmation message
+    character_count = len(old_user['characters'])
+    old_username = old_user.get('username', 'Unknown')
+    old_first_name = old_user.get('first_name', 'Unknown')
+    
+    # Check if new user exists, if not create their document
+    new_user = await user_collection.find_one({'id': new_user_id})
+    characters_to_transfer = old_user['characters']  # All characters will be transferred
+    
+    if not new_user:
+        # Create new user document
+        await user_collection.insert_one({
+            'id': new_user_id,
+            'first_name': 'Unknown',
+            'username': 'Unknown',
+            'characters': characters_to_transfer
+        })
+    else:
+        # Add all characters to existing user, preserving duplicates
+        existing_characters = new_user.get('characters', [])
+        all_characters = existing_characters + characters_to_transfer
+        await user_collection.update_one(
+            {'id': new_user_id},
+            {'$set': {'characters': all_characters}}
+        )
+    
+    # Clear the old user's characters and favorites to maintain consistency
+    await user_collection.update_one(
+        {'id': old_user_id},
+        {'$set': {'characters': []}, '$unset': {'favorites': 1}}
+    )
+    
+    # Success message
+    new_user_info = await user_collection.find_one({'id': new_user_id})
+    new_username = new_user_info.get('username', 'Unknown') if new_user_info else 'Unknown'
+    new_first_name = new_user_info.get('first_name', 'Unknown') if new_user_info else 'Unknown'
+    
+    await update.message.reply_text(
+        f"✅ <b>Transfer Completed!</b>\n\n"
+        f"📤 <b>From:</b> {escape(old_first_name)} (@{old_username}) - <code>{old_user_id}</code>\n"
+        f"📥 <b>To:</b> {escape(new_first_name)} (@{new_username}) - <code>{new_user_id}</code>\n\n"
+        f"🎴 <b>Characters Transferred:</b> {character_count}\n\n"
+        f"All characters (including duplicates) have been successfully transferred!",
+        parse_mode='HTML'
+    )
+
 application.add_handler(CommandHandler(["harem", "collection"], harem,block=False))
 application.add_handler(CommandHandler("sorts", sorts, block=False))
+application.add_handler(CommandHandler("transfer", transfer_harem, block=False))
 harem_handler = CallbackQueryHandler(harem_callback, pattern='^harem', block=False)
 application.add_handler(harem_handler)
     
