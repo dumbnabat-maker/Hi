@@ -230,11 +230,6 @@ async def rarity(client, message):
         "• Use `/lockspawn` to prevent specific cards from spawning (admin only)\n\n"
         "✨ Good luck collecting!"
     )
-<<<<<<< HEAD
-
-        
-    await message.reply_text(message_text, parse_mode='markdown') 
-=======
-    
+  
     await message.reply_text(message_text, parse_mode=enums.ParseMode.MARKDOWN)
->>>>>>> deed864 (Update parse mode for text messages and add group membership check)
+
