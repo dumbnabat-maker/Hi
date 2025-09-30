@@ -502,17 +502,35 @@ async def find(update: Update, context: CallbackContext) -> None:
                 caption += f"{i+1}. \n"
         
         # Process the image URL for compatibility
-        from shivu import process_image_url
+        from shivu import process_image_url, LOGGER
         processed_url = await process_image_url(character['img_url'])
         
         # Check if it's a video and use appropriate send method
         if is_video_url(character['img_url']):
-            await context.bot.send_video(
-                chat_id=update.effective_chat.id,
-                video=processed_url,
-                caption=caption,
-                parse_mode='HTML'
-            )
+            try:
+                await context.bot.send_video(
+                    chat_id=update.effective_chat.id,
+                    video=processed_url,
+                    caption=caption,
+                    parse_mode='HTML'
+                )
+            except Exception as video_error:
+                # Fallback: try sending as photo if video fails
+                LOGGER.warning(f"/find: Video send failed for character {character_id}, URL: {processed_url[:100]}, Error: {str(video_error)}. Trying as photo.")
+                try:
+                    await context.bot.send_photo(
+                        chat_id=update.effective_chat.id,
+                        photo=processed_url,
+                        caption=f"🎬 [Video] {caption}",
+                        parse_mode='HTML'
+                    )
+                except Exception as photo_error:
+                    # Last resort: send text with link
+                    LOGGER.error(f"/find: Both video and photo failed for character {character_id}, URL: {processed_url[:100]}")
+                    await update.message.reply_text(
+                        f"{caption}\n\n⚠️ Media display failed. View directly: {processed_url}",
+                        parse_mode='HTML'
+                    )
         else:
             await context.bot.send_photo(
                 chat_id=update.effective_chat.id,

@@ -191,19 +191,31 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
                 else:
                     mime_type = 'video/mp4'
                 
-                # Use a placeholder thumbnail (must be JPEG for Telegram API)
-                placeholder_thumbnail = 'https://via.placeholder.com/320x180.jpg'
-                
-                results.append(
-                    InlineQueryResultVideo(
-                        id=f"{character['id']}_{time.time()}",
-                        video_url=processed_url,
-                        mime_type=mime_type,
-                        thumbnail_url=placeholder_thumbnail,
-                        title=f"{character['name']} - {character['anime']}",
-                        caption=caption
+                try:
+                    # Use a placeholder thumbnail (must be JPEG for Telegram API)
+                    placeholder_thumbnail = 'https://via.placeholder.com/320x180.jpg'
+                    
+                    results.append(
+                        InlineQueryResultVideo(
+                            id=f"{character['id']}_{time.time()}",
+                            video_url=processed_url,
+                            mime_type=mime_type,
+                            thumbnail_url=placeholder_thumbnail,
+                            title=f"{character['name']} - {character['anime']}",
+                            caption=caption
+                        )
                     )
-                )
+                except Exception as video_error:
+                    # Fallback: treat as photo if video format is rejected
+                    LOGGER.warning(f"Video inline result failed for character {character['id']} ({character['name']}), URL: {processed_url[:100]}, Error: {str(video_error)}. Falling back to photo.")
+                    results.append(
+                        InlineQueryResultPhoto(
+                            thumbnail_url=processed_url,
+                            id=f"{character['id']}_{time.time()}",
+                            photo_url=processed_url,
+                            caption=f"🎬 [Video] {caption}"
+                        )
+                    )
             else:
                 results.append(
                     InlineQueryResultPhoto(
@@ -214,7 +226,8 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
                     )
                 )
         except Exception as e:
-            # Skip problematic characters to prevent the entire query from failing
+            # Log error and skip problematic characters to prevent the entire query from failing
+            LOGGER.error(f"Failed to create inline result for character {character.get('id', 'unknown')} ({character.get('name', 'unknown')}): {str(e)}")
             continue
 
     await update.inline_query.answer(results, next_offset=next_offset, cache_time=5)
