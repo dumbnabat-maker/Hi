@@ -13,6 +13,12 @@ from pyrogram.errors import UserNotParticipant, ChatAdminRequired, PeerIdInvalid
 
 from shivu import collection, user_collection, application, SUPPORT_CHAT, CHARA_CHANNEL_ID, shivuu, sudo_users
 
+def is_video_url(url):
+    """Check if a URL points to a video file"""
+    if not url:
+        return False
+    return any(ext in url.lower() for ext in ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv'])
+
 # Main group for membership checking
 MAIN_GROUP = "@CollectorOfficialGroup"
 
@@ -328,17 +334,28 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
                 try:
                     from shivu import process_image_url
                     processed_url = await process_image_url(fav_character['img_url'])
-                    await update.message.reply_photo(photo=processed_url, parse_mode='HTML', caption=harem_message, reply_markup=reply_markup)
+                    
+                    # Check if it's a video and use appropriate send method
+                    if is_video_url(fav_character['img_url']):
+                        await update.message.reply_video(video=processed_url, parse_mode='HTML', caption=harem_message, reply_markup=reply_markup)
+                    else:
+                        await update.message.reply_photo(photo=processed_url, parse_mode='HTML', caption=harem_message, reply_markup=reply_markup)
                 except Exception as e:
-                    # If image fails, send text instead
+                    # If media fails, send text instead
                     await update.message.reply_text(harem_message, parse_mode='HTML', reply_markup=reply_markup)
             else:
                 # For callback queries, update image and caption using media edit
                 try:
                     from shivu import process_image_url
-                    from telegram import InputMediaPhoto
+                    from telegram import InputMediaPhoto, InputMediaVideo
                     processed_url = await process_image_url(fav_character['img_url'])
-                    media = InputMediaPhoto(media=processed_url, caption=harem_message, parse_mode='HTML')
+                    
+                    # Check if it's a video and use appropriate media type
+                    if is_video_url(fav_character['img_url']):
+                        media = InputMediaVideo(media=processed_url, caption=harem_message, parse_mode='HTML')
+                    else:
+                        media = InputMediaPhoto(media=processed_url, caption=harem_message, parse_mode='HTML')
+                    
                     await update.callback_query.edit_message_media(media=media, reply_markup=reply_markup)
                     await update.callback_query.answer()
                 except Exception:
@@ -350,7 +367,7 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
                             await update.callback_query.answer()
                     except Exception:
                         if update.callback_query:
-                            await update.callback_query.answer("Failed to update image")
+                            await update.callback_query.answer("Failed to update media")
         else:
             if update.message:
                 await update.message.reply_text(harem_message, parse_mode='HTML', reply_markup=reply_markup)
@@ -369,17 +386,28 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
                     try:
                         from shivu import process_image_url
                         processed_url = await process_image_url(random_character['img_url'])
-                        await update.message.reply_photo(photo=processed_url, parse_mode='HTML', caption=harem_message, reply_markup=reply_markup)
+                        
+                        # Check if it's a video and use appropriate send method
+                        if is_video_url(random_character['img_url']):
+                            await update.message.reply_video(video=processed_url, parse_mode='HTML', caption=harem_message, reply_markup=reply_markup)
+                        else:
+                            await update.message.reply_photo(photo=processed_url, parse_mode='HTML', caption=harem_message, reply_markup=reply_markup)
                     except Exception as e:
-                        # If image fails, send text instead
+                        # If media fails, send text instead
                         await update.message.reply_text(harem_message, parse_mode='HTML', reply_markup=reply_markup)
                 else:
                     # For callback queries, update image and caption using media edit
                     try:
                         from shivu import process_image_url
-                        from telegram import InputMediaPhoto
+                        from telegram import InputMediaPhoto, InputMediaVideo
                         processed_url = await process_image_url(random_character['img_url'])
-                        media = InputMediaPhoto(media=processed_url, caption=harem_message, parse_mode='HTML')
+                        
+                        # Check if it's a video and use appropriate media type
+                        if is_video_url(random_character['img_url']):
+                            media = InputMediaVideo(media=processed_url, caption=harem_message, parse_mode='HTML')
+                        else:
+                            media = InputMediaPhoto(media=processed_url, caption=harem_message, parse_mode='HTML')
+                        
                         await update.callback_query.edit_message_media(media=media, reply_markup=reply_markup)
                         await update.callback_query.answer()
                     except Exception:
@@ -391,7 +419,7 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
                                 await update.callback_query.answer()
                         except Exception:
                             if update.callback_query:
-                                await update.callback_query.answer("Failed to update image")
+                                await update.callback_query.answer("Failed to update media")
             else:
                 if update.message:
                     await update.message.reply_text(harem_message, parse_mode='HTML', reply_markup=reply_markup)
@@ -500,12 +528,22 @@ async def fav(client, message):
         if 'img_url' in character:
             from shivu import process_image_url
             processed_url = await process_image_url(character['img_url'])
-            await message.reply_photo(
-                photo=processed_url,
-                caption=caption,
-                parse_mode=enums.ParseMode.HTML,
-                reply_markup=keyboard
-            )
+            
+            # Check if it's a video and use appropriate send method
+            if is_video_url(character['img_url']):
+                await message.reply_video(
+                    video=processed_url,
+                    caption=caption,
+                    parse_mode=enums.ParseMode.HTML,
+                    reply_markup=keyboard
+                )
+            else:
+                await message.reply_photo(
+                    photo=processed_url,
+                    caption=caption,
+                    parse_mode=enums.ParseMode.HTML,
+                    reply_markup=keyboard
+                )
         else:
             await message.reply_text(caption, parse_mode=enums.ParseMode.HTML, reply_markup=keyboard)
     except Exception as e:

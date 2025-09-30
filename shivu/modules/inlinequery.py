@@ -4,11 +4,17 @@ from html import escape
 from cachetools import TTLCache
 from pymongo import MongoClient, ASCENDING
 
-from telegram import Update, InlineQueryResultPhoto
+from telegram import Update, InlineQueryResultPhoto, InlineQueryResultVideo
 from telegram.ext import InlineQueryHandler, CallbackContext, CommandHandler 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from shivu import user_collection, collection, application, db, LOGGER
+
+def is_video_url(url):
+    """Check if a URL points to a video file"""
+    if not url:
+        return False
+    return any(ext in url.lower() for ext in ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv'])
 
 # Rarity emojis configuration (updated to match latest rarities)
 rarity_emojis = {
@@ -169,14 +175,44 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
             from shivu import process_image_url
             processed_url = await process_image_url(character['img_url'])
             
-            results.append(
-                InlineQueryResultPhoto(
-                    thumbnail_url=processed_url,
-                    id=f"{character['id']}_{time.time()}",
-                    photo_url=processed_url,
-                    caption=caption
+            # Check if it's a video and use appropriate result type
+            if is_video_url(character['img_url']):
+                # Determine mime type based on file extension
+                if '.webm' in character['img_url'].lower():
+                    mime_type = 'video/webm'
+                elif '.mov' in character['img_url'].lower():
+                    mime_type = 'video/quicktime'
+                elif '.avi' in character['img_url'].lower():
+                    mime_type = 'video/x-msvideo'
+                elif '.mkv' in character['img_url'].lower():
+                    mime_type = 'video/x-matroska'
+                elif '.flv' in character['img_url'].lower():
+                    mime_type = 'video/x-flv'
+                else:
+                    mime_type = 'video/mp4'
+                
+                # Use a placeholder thumbnail (must be JPEG for Telegram API)
+                placeholder_thumbnail = 'https://via.placeholder.com/320x180.jpg'
+                
+                results.append(
+                    InlineQueryResultVideo(
+                        id=f"{character['id']}_{time.time()}",
+                        video_url=processed_url,
+                        mime_type=mime_type,
+                        thumbnail_url=placeholder_thumbnail,
+                        title=f"{character['name']} - {character['anime']}",
+                        caption=caption
+                    )
                 )
-            )
+            else:
+                results.append(
+                    InlineQueryResultPhoto(
+                        thumbnail_url=processed_url,
+                        id=f"{character['id']}_{time.time()}",
+                        photo_url=processed_url,
+                        caption=caption
+                    )
+                )
         except Exception as e:
             # Skip problematic characters to prevent the entire query from failing
             continue

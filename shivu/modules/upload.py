@@ -61,6 +61,13 @@ def is_discord_cdn_url(url):
         return False
 
 
+def is_video_url(url):
+    """Check if a URL points to a video file"""
+    if not url:
+        return False
+    return any(ext in url.lower() for ext in ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv'])
+
+
 def validate_url(url):
     """
     Validate a URL and return whether it's accessible.
@@ -498,12 +505,21 @@ async def find(update: Update, context: CallbackContext) -> None:
         from shivu import process_image_url
         processed_url = await process_image_url(character['img_url'])
         
-        await context.bot.send_photo(
-            chat_id=update.effective_chat.id,
-            photo=processed_url,
-            caption=caption,
-            parse_mode='HTML'
-        )
+        # Check if it's a video and use appropriate send method
+        if is_video_url(character['img_url']):
+            await context.bot.send_video(
+                chat_id=update.effective_chat.id,
+                video=processed_url,
+                caption=caption,
+                parse_mode='HTML'
+            )
+        else:
+            await context.bot.send_photo(
+                chat_id=update.effective_chat.id,
+                photo=processed_url,
+                caption=caption,
+                parse_mode='HTML'
+            )
         
     except Exception as e:
         await update.message.reply_text(f'❌ Error finding character: {str(e)}')
