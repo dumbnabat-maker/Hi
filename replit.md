@@ -2,6 +2,14 @@
 
 This is a Telegram character catcher bot called "Waifu & Husbando Catcher" that operates as a gamified character collection system. The bot sends anime character images to Telegram groups after every 100 messages, and users can guess the character names to add them to their personal collections. The system includes trading, gifting, favorites, and leaderboard features to create an engaging community-driven game.
 
+# Recent Changes
+
+## September 30, 2025
+- **Video Upload Support**: Added MP4 and other video format support to `/upload` command. Videos are now validated and sent using `send_video` API
+- **Character Name Filtering**: Fixed `/sorts character` command to support partial name matching. Now "Ashley" will match "Ashley Graves ⛩️" and other character names with emojis
+- **Locked Spawns Display**: Fixed `lockedspawns` command to include Retro rarity characters in the display
+- **Pagination Enhancement**: Added next/previous navigation buttons to `lockedspawns` command for better navigation through locked characters (20 per page)
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
