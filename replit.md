@@ -5,6 +5,11 @@ This is a Telegram character catcher bot called "Waifu & Husbando Catcher" that 
 # Recent Changes
 
 ## September 30, 2025
+- **Video Detection Fix for URLs Without Extensions**: Fixed video detection to work with URLs that don't have file extensions (like cloudflare /dl/ links)
+  - Changed all video detection checks from `is_video_url()` to `is_video_character()` across harem.py, inlinequery.py, and upload.py
+  - Now correctly detects videos using both URL extensions AND the 🎬 emoji marker in character names
+  - Fixes issue where videos served from cloudflare and other services without file extensions in URLs weren't being recognized as videos
+  - Affected commands: `/harem`, `/fav`, `/find`, and inline queries
 - **Non-Discord MP4 Fallback Handling**: Fixed issue where non-Discord MP4 links weren't displaying in commands and inline queries
   - Added comprehensive video-to-photo fallback system across all display paths
   - When video format fails (especially in Telegram inline queries), gracefully falls back to displaying as photo with 🎬 indicator
