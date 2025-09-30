@@ -6,6 +6,11 @@ This is a Telegram character catcher bot called "Waifu & Husbando Catcher" that 
 
 ## September 30, 2025
 - **Video Upload Support**: Added MP4 and other video format support to `/upload` command. Videos are now validated and sent using `send_video` API
+- **Video Display Support**: Fixed all display commands to properly play videos instead of showing them as broken images
+  - `/find` command now displays videos correctly
+  - `/fav` command plays videos when favoriting video characters
+  - Harem preview shows videos for favorite and random characters
+  - Inline queries support video results with proper MIME types (MP4, WEBM, MOV, AVI, MKV, FLV)
 - **Character Name Filtering**: Fixed `/sorts character` command to support partial name matching. Now "Ashley" will match "Ashley Graves ⛩️" and other character names with emojis
 - **Locked Spawns Display**: Fixed `lockedspawns` command to include Retro rarity characters in the display
 - **Pagination Enhancement**: Added next/previous navigation buttons to `lockedspawns` command for better navigation through locked characters (20 per page)
