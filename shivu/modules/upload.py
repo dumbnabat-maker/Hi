@@ -67,6 +67,23 @@ def is_video_url(url):
         return False
     return any(ext in url.lower() for ext in ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv'])
 
+def is_video_character(character):
+    """Check if a character is a video by URL extension or name marker"""
+    if not character:
+        return False
+    
+    # Check URL extension
+    url = character.get('img_url', '')
+    if is_video_url(url):
+        return True
+    
+    # Check for 🎬 emoji marker in name
+    name = character.get('name', '')
+    if '🎬' in name:
+        return True
+    
+    return False
+
 
 def validate_url(url):
     """
