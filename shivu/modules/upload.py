@@ -38,7 +38,7 @@ Use rarity number accordingly:
 8 = 🪩 Zenith
 9 = 🍬 Limited Edition
 
-✅ Supported: Discord CDN links, direct image URLs, and other standard image hosting services"""
+✅ Supported: Discord CDN links, direct image/video URLs (including MP4), and other standard hosting services"""
 
 
 def is_discord_cdn_url(url):
@@ -86,12 +86,14 @@ def validate_url(url):
         
         # Try to open the URL
         with urllib.request.urlopen(req, timeout=10) as response:
-            # Check if it's actually an image by checking content type or URL
+            # Check if it's an image or video by checking content type or URL
             content_type = response.headers.get('Content-Type', '')
-            if content_type.startswith('image/') or any(ext in url.lower() for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']):
-                return True, "Valid image URL"
+            if content_type.startswith('image/') or content_type.startswith('video/'):
+                return True, f"Valid {'image' if content_type.startswith('image/') else 'video'} URL"
+            elif any(ext in url.lower() for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.mp4', '.mov', '.avi', '.mkv']):
+                return True, "Valid media URL"
             else:
-                return False, "URL does not appear to be an image"
+                return False, "URL does not appear to be an image or video"
                 
     except urllib.error.HTTPError as e:
         return False, f"HTTP Error: {e.code}"
@@ -148,6 +150,9 @@ async def upload(update: Update, context: CallbackContext) -> None:
             await update.message.reply_text(f'Invalid URL: {validation_message}')
             return
         
+        # Check if it's a video based on validation message or URL extension
+        is_video = 'video' in validation_message.lower() or any(ext in args[0].lower() for ext in ['.mp4', '.mov', '.avi', '.mkv'])
+        
         # If it's a Discord CDN link, inform the user
         if is_discord_cdn_url(args[0]):
             await update.message.reply_text('✅ Discord CDN link detected - processing...', reply_to_message_id=update.message.message_id)
@@ -194,12 +199,20 @@ async def upload(update: Update, context: CallbackContext) -> None:
                 f"📤 Added by <a href='tg://user?id={update.effective_user.id}'>{update.effective_user.first_name}</a>"
             )
             
-            message = await context.bot.send_photo(
-                chat_id=CHARA_CHANNEL_ID,
-                photo=processed_url,
-                caption=caption,
-                parse_mode='HTML'
-            )
+            if is_video:
+                message = await context.bot.send_video(
+                    chat_id=CHARA_CHANNEL_ID,
+                    video=processed_url,
+                    caption=caption,
+                    parse_mode='HTML'
+                )
+            else:
+                message = await context.bot.send_photo(
+                    chat_id=CHARA_CHANNEL_ID,
+                    photo=processed_url,
+                    caption=caption,
+                    parse_mode='HTML'
+                )
             character['message_id'] = message.message_id
             await collection.insert_one(character)
             await update.message.reply_text('CHARACTER ADDED....')

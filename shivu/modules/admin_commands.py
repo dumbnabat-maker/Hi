@@ -1,5 +1,6 @@
 from pyrogram import filters, enums
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+import math
 
 from shivu import collection, locked_spawns_collection, shivuu
 from shivu.config import Config
@@ -117,8 +118,8 @@ async def unlockspawn(client, message):
     )
 
 @shivuu.on_message(filters.command("lockedspawns"))
-async def lockedspawns(client, message):
-    """View all currently locked spawn characters"""
+async def lockedspawns(client, message, page=0):
+    """View all currently locked spawn characters with pagination"""
     
     locked_characters = await locked_spawns_collection.find().to_list(length=None)
     
@@ -130,9 +131,22 @@ async def lockedspawns(client, message):
         )
         return
     
+    # Items per page
+    items_per_page = 20
+    total_pages = math.ceil(len(locked_characters) / items_per_page)
+    
+    # Ensure valid page
+    if page < 0 or page >= total_pages:
+        page = 0
+    
+    # Get characters for current page
+    start_idx = page * items_per_page
+    end_idx = start_idx + items_per_page
+    current_page_chars = locked_characters[start_idx:end_idx]
+    
     # Group by rarity
     rarity_groups = {}
-    for char in locked_characters:
+    for char in current_page_chars:
         rarity = char.get('rarity', 'Common')
         if rarity not in rarity_groups:
             rarity_groups[rarity] = []
@@ -150,42 +164,107 @@ async def lockedspawns(client, message):
         "Limited Edition": "🍬"
     }
     
-    message_parts = ["🔒 **Locked Spawn Characters**\n"]
+    message_text = f"🔒 **Locked Spawn Characters** - Page {page+1}/{total_pages}\n"
     
-    for rarity in ["Limited Edition", "Zenith", "Mythic", "Legendary", "Epic", "Rare", "Uncommon", "Common"]:
+    for rarity in ["Limited Edition", "Zenith", "Retro", "Mythic", "Legendary", "Epic", "Rare", "Uncommon", "Common"]:
         if rarity in rarity_groups:
             rarity_emoji = rarity_emojis.get(rarity, "✨")
-            message_parts.append(f"\n{rarity_emoji} **{rarity}:**")
+            message_text += f"\n{rarity_emoji} **{rarity}:**\n"
             
             for char in rarity_groups[rarity]:
-                message_parts.append(f"• `{char['character_id']}` - {char['character_name']} ({char['anime']})")
+                message_text += f"• `{char['character_id']}` - {char['character_name']} ({char['anime']})\n"
     
-    message_parts.append(f"\n📊 **Total Locked:** {len(locked_characters)} characters")
+    message_text += f"\n📊 **Total Locked:** {len(locked_characters)} characters"
     
-    full_message = "\n".join(message_parts)
+    # Add pagination buttons if needed
+    keyboard = None
+    if total_pages > 1:
+        buttons = []
+        if page > 0:
+            buttons.append(InlineKeyboardButton("⬅️ Previous", callback_data=f"lockedspawns:{page-1}"))
+        if page < total_pages - 1:
+            buttons.append(InlineKeyboardButton("Next ➡️", callback_data=f"lockedspawns:{page+1}"))
+        
+        if buttons:
+            keyboard = InlineKeyboardMarkup([buttons])
     
-    # Split message if too long
-    if len(full_message) > 4000:
-        parts = []
-        current_part = "🔒 **Locked Spawn Characters**\n"
+    await message.reply_text(message_text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=keyboard)
+
+@shivuu.on_callback_query(filters.create(lambda _, __, query: query.data.startswith("lockedspawns:")))
+async def lockedspawns_callback(client, callback_query):
+    """Handle lockedspawns pagination"""
+    try:
+        page = int(callback_query.data.split(":")[1])
         
-        for line in message_parts[1:]:
-            if len(current_part + line + "\n") > 4000:
-                parts.append(current_part)
-                current_part = line + "\n"
-            else:
-                current_part += line + "\n"
+        # Get locked characters
+        locked_characters = await locked_spawns_collection.find().to_list(length=None)
         
-        if current_part:
-            parts.append(current_part)
+        if not locked_characters:
+            await callback_query.answer("No locked spawns available!", show_alert=True)
+            return
         
-        for i, part in enumerate(parts):
-            if i == 0:
-                await message.reply_text(part, parse_mode=enums.ParseMode.MARKDOWN)
-            else:
-                await message.reply_text(f"**Continued...**\n\n{part}", parse_mode=enums.ParseMode.MARKDOWN)
-    else:
-        await message.reply_text(full_message, parse_mode=enums.ParseMode.MARKDOWN)
+        # Items per page
+        items_per_page = 20
+        total_pages = math.ceil(len(locked_characters) / items_per_page)
+        
+        # Ensure valid page
+        if page < 0 or page >= total_pages:
+            page = 0
+        
+        # Get characters for current page
+        start_idx = page * items_per_page
+        end_idx = start_idx + items_per_page
+        current_page_chars = locked_characters[start_idx:end_idx]
+        
+        # Group by rarity
+        rarity_groups = {}
+        for char in current_page_chars:
+            rarity = char.get('rarity', 'Common')
+            if rarity not in rarity_groups:
+                rarity_groups[rarity] = []
+            rarity_groups[rarity].append(char)
+        
+        rarity_emojis = {
+            "Common": "⚪️",
+            "Uncommon": "🟢",
+            "Rare": "🔵",
+            "Epic": "🟣",
+            "Legendary": "🟡",
+            "Mythic": "🏵",
+            "Retro": "🍥",
+            "Zenith": "🪩",
+            "Limited Edition": "🍬"
+        }
+        
+        message_text = f"🔒 **Locked Spawn Characters** - Page {page+1}/{total_pages}\n"
+        
+        for rarity in ["Limited Edition", "Zenith", "Retro", "Mythic", "Legendary", "Epic", "Rare", "Uncommon", "Common"]:
+            if rarity in rarity_groups:
+                rarity_emoji = rarity_emojis.get(rarity, "✨")
+                message_text += f"\n{rarity_emoji} **{rarity}:**\n"
+                
+                for char in rarity_groups[rarity]:
+                    message_text += f"• `{char['character_id']}` - {char['character_name']} ({char['anime']})\n"
+        
+        message_text += f"\n📊 **Total Locked:** {len(locked_characters)} characters"
+        
+        # Add pagination buttons if needed
+        keyboard = None
+        if total_pages > 1:
+            buttons = []
+            if page > 0:
+                buttons.append(InlineKeyboardButton("⬅️ Previous", callback_data=f"lockedspawns:{page-1}"))
+            if page < total_pages - 1:
+                buttons.append(InlineKeyboardButton("Next ➡️", callback_data=f"lockedspawns:{page+1}"))
+            
+            if buttons:
+                keyboard = InlineKeyboardMarkup([buttons])
+        
+        await callback_query.edit_message_text(message_text, parse_mode=enums.ParseMode.MARKDOWN, reply_markup=keyboard)
+        await callback_query.answer()
+        
+    except Exception as e:
+        await callback_query.answer(f"Error: {str(e)}", show_alert=True)
 
 @shivuu.on_message(filters.command("rarity"))
 async def rarity(client, message):

@@ -126,8 +126,8 @@ async def sorts(update: Update, context: CallbackContext) -> None:
             await update.message.reply_text("❌ You don't have any characters yet!")
             return
         
-        # Check if character exists in user's collection
-        character_exists = any(char['name'].lower() == character_filter.lower() for char in user['characters'])
+        # Check if character exists in user's collection (partial match)
+        character_exists = any(character_filter.lower() in char['name'].lower() for char in user['characters'])
         if not character_exists:
             await update.message.reply_text(
                 f"❌ You don't have any characters named '{character_filter}' in your collection!",
@@ -214,7 +214,7 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
     if filter_type == 'rarity' and filter_value:
         characters = [char for char in characters if char.get('rarity') == filter_value]
     elif filter_type == 'character' and filter_value:
-        characters = [char for char in characters if char['name'].lower() == filter_value.lower()]
+        characters = [char for char in characters if filter_value.lower() in char['name'].lower()]
     
     # Then apply sorting
     if sort_preference == 'rarity':
