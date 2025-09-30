@@ -5,6 +5,12 @@ This is a Telegram character catcher bot called "Waifu & Husbando Catcher" that 
 # Recent Changes
 
 ## September 30, 2025
+- **Non-Discord MP4 Fallback Handling**: Fixed issue where non-Discord MP4 links weren't displaying in commands and inline queries
+  - Added comprehensive video-to-photo fallback system across all display paths
+  - When video format fails (especially in Telegram inline queries), gracefully falls back to displaying as photo with 🎬 indicator
+  - Implemented fallback handling in `/find`, `/fav`, harem display (both message and callback paths), and inline queries
+  - Added detailed error logging to track URL failures and diagnose issues with video display
+  - All video fallbacks now consistently mark with 🎬 [Video] indicator so users know it's a video character
 - **Video Upload Support**: Added MP4 and other video format support to `/upload` command. Videos are now validated and sent using `send_video` API
 - **Video Display Support**: Fixed all display commands to properly play videos instead of showing them as broken images
   - `/find` command now displays videos correctly
