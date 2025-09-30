@@ -353,7 +353,7 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
                     processed_url = await process_image_url(fav_character['img_url'])
                     
                     # Check if it's a video and use appropriate send method
-                    if is_video_url(fav_character['img_url']):
+                    if is_video_character(fav_character):
                         try:
                             await update.message.reply_video(video=processed_url, parse_mode='HTML', caption=harem_message, reply_markup=reply_markup)
                         except Exception as video_error:
@@ -378,7 +378,7 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
                     processed_url = await process_image_url(fav_character['img_url'])
                     
                     # Check if it's a video and use appropriate media type
-                    if is_video_url(fav_character['img_url']):
+                    if is_video_character(fav_character):
                         try:
                             media = InputMediaVideo(media=processed_url, caption=harem_message, parse_mode='HTML')
                             await update.callback_query.edit_message_media(media=media, reply_markup=reply_markup)
@@ -435,7 +435,7 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
                         processed_url = await process_image_url(random_character['img_url'])
                         
                         # Check if it's a video and use appropriate send method
-                        if is_video_url(random_character['img_url']):
+                        if is_video_character(random_character):
                             try:
                                 await update.message.reply_video(video=processed_url, parse_mode='HTML', caption=harem_message, reply_markup=reply_markup)
                             except Exception as video_error:
@@ -460,7 +460,7 @@ async def harem(update: Update, context: CallbackContext, page=0) -> None:
                         processed_url = await process_image_url(random_character['img_url'])
                         
                         # Check if it's a video and use appropriate media type
-                        if is_video_url(random_character['img_url']):
+                        if is_video_character(random_character):
                             try:
                                 media = InputMediaVideo(media=processed_url, caption=harem_message, parse_mode='HTML')
                                 await update.callback_query.edit_message_media(media=media, reply_markup=reply_markup)
@@ -607,7 +607,7 @@ async def fav(client, message):
             processed_url = await process_image_url(character['img_url'])
             
             # Check if it's a video and use appropriate send method
-            if is_video_url(character['img_url']):
+            if is_video_character(character):
                 try:
                     await message.reply_video(
                         video=processed_url,

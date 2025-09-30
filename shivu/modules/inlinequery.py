@@ -193,7 +193,7 @@ async def inlinequery(update: Update, context: CallbackContext) -> None:
             processed_url = await process_image_url(character['img_url'])
             
             # Check if it's a video and use appropriate result type
-            if is_video_url(character['img_url']):
+            if is_video_character(character):
                 # Determine mime type based on file extension
                 if '.webm' in character['img_url'].lower():
                     mime_type = 'video/webm'

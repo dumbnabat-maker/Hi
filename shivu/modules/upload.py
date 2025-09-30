@@ -523,7 +523,7 @@ async def find(update: Update, context: CallbackContext) -> None:
         processed_url = await process_image_url(character['img_url'])
         
         # Check if it's a video and use appropriate send method
-        if is_video_url(character['img_url']):
+        if is_video_character(character):
             try:
                 await context.bot.send_video(
                     chat_id=update.effective_chat.id,
