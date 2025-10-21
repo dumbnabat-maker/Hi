@@ -496,6 +496,17 @@ def run_flask():
 # Start Flask in a background thread
 threading.Thread(target=run_flask).start()
 # --- End of Added Code ---
+import threading
+from telegram import Bot
+from telegram.ext import Updater
+
+# Your bot token
+TOKEN = "BOT_TOKEN"
+
+updater = Updater(TOKEN, use_context=True)
+
+# Start polling in a separate thread
+threading.Thread(target=updater.start_polling, daemon=True).start()
 if __name__ == "__main__":
     shivuu.start()
     LOGGER.info("Bot started")
