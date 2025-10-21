@@ -478,7 +478,24 @@ def main() -> None:
     application.post_init = post_init
 
     application.run_polling(drop_pending_updates=True)
-    
+    # --- Added for Render Port Support ---
+import os
+import threading
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is running!"
+
+def run_flask():
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
+
+# Start Flask in a background thread
+threading.Thread(target=run_flask).start()
+# --- End of Added Code ---
 if __name__ == "__main__":
     shivuu.start()
     LOGGER.info("Bot started")
